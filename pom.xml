@@ -16,6 +16,10 @@
     <name>inno-microservices</name>
     <packaging>pom</packaging>
 
+    <modules>
+        <module>user-service</module>
+    </modules>
+
     <properties>
         <java.version>21</java.version>
         <spring-boot.version>3.5.6</spring-boot.version>
