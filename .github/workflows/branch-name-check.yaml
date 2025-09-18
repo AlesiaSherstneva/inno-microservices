@@ -1,0 +1,23 @@
+name: branch-name-convention
+
+on:
+  push:
+    branches-ignore: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name
+        run: |
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          
+          if ! echo "$BRANCH_NAME" | grep -Eq '^tasks/[a-z0-9-]+$'; then
+           echo "❌ Invalid branch name: $BRANCH_NAME"
+           echo "✅ Use: tasks/task-name"
+           exit 1
+          fi
+          
+          echo "✅ Branch name '$BRANCH_NAME' is valid"
