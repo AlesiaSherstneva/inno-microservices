@@ -5,7 +5,7 @@ import com.innowise.userservice.dto.UserResponseDto;
 import com.innowise.userservice.dto.mapper.UserMapper;
 import com.innowise.userservice.entity.User;
 import com.innowise.userservice.exception.EmailAlreadyExistsException;
-import com.innowise.userservice.exception.EntityNotFoundException;
+import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.repository.UserRepository;
 import com.innowise.userservice.service.UserService;
 import com.innowise.userservice.util.CardFieldsGenerator;
@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserResponseDto getUserById(Long userId) {
         User retrievedUser = userRepository.findById(userId)
-                .orElseThrow(() -> EntityNotFoundException.userNotFound(userId));
+                .orElseThrow(() -> ResourceNotFoundException.userNotFound(userId));
 
         return userMapper.toResponseDto(retrievedUser);
     }
@@ -50,7 +50,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserResponseDto getUserByEmail(String email) {
         User retrievedUser = userRepository.findUserByEmail(email)
-                .orElseThrow(() -> EntityNotFoundException.userNotFound(email));
+                .orElseThrow(() -> ResourceNotFoundException.userNotFound(email));
 
         return userMapper.toResponseDto(retrievedUser);
     }
@@ -71,7 +71,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponseDto updateUser(Long userId, UserRequestDto userRequestDto) {
         User userToUpdate = userRepository.findById(userId)
-                .orElseThrow(() -> EntityNotFoundException.userNotFound(userId));
+                .orElseThrow(() -> ResourceNotFoundException.userNotFound(userId));
 
         boolean nameChanged = !userToUpdate.getName().equals(userRequestDto.getName())
                 || !userToUpdate.getSurname().equals(userRequestDto.getSurname());
@@ -96,7 +96,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteUser(Long userId) {
         User userToDelete = userRepository.findById(userId)
-                .orElseThrow(() -> EntityNotFoundException.userNotFound(userId));
+                .orElseThrow(() -> ResourceNotFoundException.userNotFound(userId));
 
         userRepository.delete(userToDelete);
     }

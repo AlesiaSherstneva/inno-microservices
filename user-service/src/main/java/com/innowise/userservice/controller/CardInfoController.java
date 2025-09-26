@@ -1,9 +1,9 @@
 package com.innowise.userservice.controller;
 
-import com.innowise.userservice.dto.CardInfoRequestDto;
-import com.innowise.userservice.dto.CardInfoResponseDto;
-import com.innowise.userservice.exception.EntityNotFoundException;
-import com.innowise.userservice.service.CardInfoService;
+import com.innowise.userservice.dto.CardRequestDto;
+import com.innowise.userservice.dto.CardResponseDto;
+import com.innowise.userservice.exception.ResourceNotFoundException;
+import com.innowise.userservice.service.CardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,39 +25,46 @@ import java.util.List;
  * Provides endpoints for CRUD operations on cards.
  * Card numbers are automatically generated and guaranteed to be unique.
  *
- * @see CardInfoService
- * @see CardInfoRequestDto
- * @see CardInfoResponseDto
+ * @see CardService
+ * @see CardRequestDto
+ * @see CardResponseDto
  */
 @Validated
 @RestController
 @RequestMapping("/cards")
 @RequiredArgsConstructor
-public class CardInfoController {
-    private final CardInfoService cardInfoService;
+public class CardController {
+    private final CardService cardService;
 
     /**
      * Retrieves a card by unique identifier.
      *
-     * @param cardInfoId the unique identifier of the card to retrieve
+     * @param id the unique identifier of the card to retrieve
      * @return the card data
-     * @throws EntityNotFoundException if the card with given ID does not exist
+     * @throws ResourceNotFoundException if the card with given ID does not exist
      */
     @GetMapping("/{id}")
-    public ResponseEntity<CardInfoResponseDto> getCardById(@PathVariable("id") Long cardInfoId) {
-        CardInfoResponseDto cardInfoResponseDto = cardInfoService.getCardById(cardInfoId);
+    public ResponseEntity<CardResponseDto> getCardById(@PathVariable("id") Long id) {
+        CardResponseDto cardResponseDto = cardService.getCardById(id);
 
-        return ResponseEntity.ok(cardInfoResponseDto);
+        return ResponseEntity.ok(cardResponseDto);
     }
 
+    /**
+     * Retrieves cards based on provided IDs or all cards if no IDs are specified.
+     * Returns empty list if no cards match the criteria.
+     *
+     * @param ids optional list of card IDs to filter by
+     * @return list of cards
+     */
     @GetMapping
-    public ResponseEntity<List<CardInfoResponseDto>> getCards(@RequestParam(required = false) List<Long> ids) {
-        List<CardInfoResponseDto> retrievedCards;
+    public ResponseEntity<List<CardResponseDto>> getCards(@RequestParam(required = false) List<Long> ids) {
+        List<CardResponseDto> retrievedCards;
 
         if (ids != null && !ids.isEmpty()) {
-            retrievedCards = cardInfoService.getCardsByIds(ids);
+            retrievedCards = cardService.getCardsByIds(ids);
         } else {
-            retrievedCards = cardInfoService.getAllCards();
+            retrievedCards = cardService.getAllCards();
         }
 
         return ResponseEntity.ok(retrievedCards);
@@ -68,15 +75,15 @@ public class CardInfoController {
      * Automatically generates unique card number and sets expiration date.
      * Holder is generated from user's name and surname.
      *
-     * @param cardInfoRequestDto the card data to create, must contain valid user ID
+     * @param cardRequestDto the card data to create, must contain valid user ID
      * @return the created card data
-     * @throws EntityNotFoundException if the user with given ID does not exist
+     * @throws ResourceNotFoundException if the user with given ID does not exist
      */
     @PostMapping
-    public ResponseEntity<CardInfoResponseDto> createCard(@RequestBody @Valid CardInfoRequestDto cardInfoRequestDto) {
-        CardInfoResponseDto cardInfoResponseDto = cardInfoService.createCard(cardInfoRequestDto);
+    public ResponseEntity<CardResponseDto> createCard(@RequestBody @Valid CardRequestDto cardRequestDto) {
+        CardResponseDto cardResponseDto = cardService.createCard(cardRequestDto);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(cardInfoResponseDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(cardResponseDto);
     }
 
     /**
@@ -84,11 +91,11 @@ public class CardInfoController {
      *
      * @param id the unique identifier of the card to delete
      * @return empty response
-     * @throws EntityNotFoundException if the card with given ID does not exist
+     * @throws ResourceNotFoundException if the card with given ID does not exist
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCard(@PathVariable("id") Long id) {
-        cardInfoService.deleteCard(id);
+        cardService.deleteCard(id);
 
         return ResponseEntity.noContent().build();
     }
