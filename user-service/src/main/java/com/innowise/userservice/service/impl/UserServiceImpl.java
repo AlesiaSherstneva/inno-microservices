@@ -6,6 +6,7 @@ import com.innowise.userservice.dto.mapper.UserMapper;
 import com.innowise.userservice.entity.User;
 import com.innowise.userservice.exception.EmailAlreadyExistsException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
+import com.innowise.userservice.repository.CardRepository;
 import com.innowise.userservice.repository.UserRepository;
 import com.innowise.userservice.service.UserService;
 import com.innowise.userservice.util.CardFieldsGenerator;
@@ -19,6 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final CardRepository cardRepository;
     private final UserMapper userMapper;
 
     @Override
@@ -32,7 +34,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponseDto getUserById(Long userId) {
-        User retrievedUser = userRepository.findById(userId)
+        User retrievedUser = userRepository.findUserById(userId)
                 .orElseThrow(() -> ResourceNotFoundException.userNotFound(userId));
 
         return userMapper.toResponseDto(retrievedUser);
@@ -70,34 +72,35 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponseDto updateUser(Long userId, UserRequestDto userRequestDto) {
-        User userToUpdate = userRepository.findById(userId)
+        User updatingUser = userRepository.findUserById(userId)
                 .orElseThrow(() -> ResourceNotFoundException.userNotFound(userId));
 
-        boolean nameChanged = !userToUpdate.getName().equals(userRequestDto.getName())
-                || !userToUpdate.getSurname().equals(userRequestDto.getSurname());
-
-        if (!userToUpdate.getEmail().equals(userRequestDto.getEmail())
+        if (!updatingUser.getEmail().equals(userRequestDto.getEmail())
                 && userRepository.existsByEmail(userRequestDto.getEmail())) {
             throw new EmailAlreadyExistsException(userRequestDto.getEmail());
         }
 
-        userMapper.updateUserFromDto(userRequestDto, userToUpdate);
-        if (nameChanged && userToUpdate.getCards() != null) {
-            userToUpdate.getCards().forEach(card ->
-                    card.setHolder(CardFieldsGenerator.formatCardHolderName(userToUpdate)));
+        boolean nameChanged = !updatingUser.getName().equals(userRequestDto.getName())
+                || !updatingUser.getSurname().equals(userRequestDto.getSurname());
+
+        userMapper.updateUserFromDto(userRequestDto, updatingUser);
+
+        if (nameChanged && updatingUser.getCards() != null) {
+            String updatingHolder = CardFieldsGenerator.formatCardHolderName(updatingUser);
+            updatingUser.getCards().forEach(card -> card.setHolder(updatingHolder));
+
+            cardRepository.updateHolderByUserId(updatingUser.getId(), updatingHolder);
         }
 
-        User updatedUser = userRepository.save(userToUpdate);
+        userRepository.updateUser(updatingUser.getId(), updatingUser.getName(), updatingUser.getSurname(),
+                updatingUser.getBirthDate(), updatingUser.getEmail());
 
-        return userMapper.toResponseDto(updatedUser);
+        return userMapper.toResponseDto(updatingUser);
     }
 
     @Override
     @Transactional
     public void deleteUser(Long userId) {
-        User userToDelete = userRepository.findById(userId)
-                .orElseThrow(() -> ResourceNotFoundException.userNotFound(userId));
-
-        userRepository.delete(userToDelete);
+        userRepository.deleteUserById(userId);
     }
 }

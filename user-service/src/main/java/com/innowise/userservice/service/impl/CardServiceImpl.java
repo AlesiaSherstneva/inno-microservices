@@ -35,7 +35,7 @@ public class CardServiceImpl implements CardService {
     @Override
     @Transactional(readOnly = true)
     public CardResponseDto getCardById(Long cardId) {
-        Card retrievedCard = cardRepository.findById(cardId)
+        Card retrievedCard = cardRepository.findCardById(cardId)
                 .orElseThrow(() -> ResourceNotFoundException.cardNotFound(cardId));
 
         return cardMapper.toResponseDto(retrievedCard);
@@ -52,7 +52,7 @@ public class CardServiceImpl implements CardService {
     @Override
     @Transactional
     public CardResponseDto createCard(CardRequestDto cardRequestDto) {
-        User userToAddCard = userRepository.findById(cardRequestDto.getUserId())
+        User userToAddCard = userRepository.findUserById(cardRequestDto.getUserId())
                 .orElseThrow(() -> ResourceNotFoundException.userNotFound(cardRequestDto.getUserId()));
 
         String newCardNumber;
@@ -75,9 +75,6 @@ public class CardServiceImpl implements CardService {
     @Override
     @Transactional
     public void deleteCard(Long cardId) {
-        Card cardToDelete = cardRepository.findById(cardId)
-                .orElseThrow(() -> ResourceNotFoundException.cardNotFound(cardId));
-
-        cardRepository.delete(cardToDelete);
+        cardRepository.deleteCardById(cardId);
     }
 }

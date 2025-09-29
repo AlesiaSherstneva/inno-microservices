@@ -54,6 +54,6 @@ public class User {
     private String email;
 
     /** List of cards associated with this user. Each user can have multiple cards. */
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     private List<Card> cards;
 }
