@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Mapper(componentModel = "spring",
-        uses = CardInfoMapper.class,
+        uses = CardMapper.class,
         unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface UserMapper {
     User toEntity(UserRequestDto userDto);

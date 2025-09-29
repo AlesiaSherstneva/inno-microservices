@@ -1,14 +1,14 @@
 package com.innowise.userservice.util;
 
 import com.innowise.userservice.entity.User;
-import com.innowise.userservice.service.CardInfoService;
+import com.innowise.userservice.service.CardService;
 
 import java.util.Random;
 
 /**
  * Utility class for generating card-related data.
  *
- * @see CardInfoService
+ * @see CardService
  */
 public class CardFieldsGenerator {
     /** Random number generator for card number creation */

@@ -27,5 +27,5 @@ public class UserResponseDto {
     private String email;
 
     /** List of cards associated with this user, empty list if user has no cards */
-    private List<CardInfoResponseDto> cards;
+    private List<CardResponseDto> cards;
 }

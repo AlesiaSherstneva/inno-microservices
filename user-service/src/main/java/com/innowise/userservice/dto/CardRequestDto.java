@@ -9,7 +9,7 @@ import lombok.Data;
  * Card number and other fields are generated automatically.
  */
 @Data
-public class CardInfoRequestDto {
+public class CardRequestDto {
     /** Unique identifier of the user who will own the card. */
     @NotNull(message = "User's id is required")
     private Long userId;

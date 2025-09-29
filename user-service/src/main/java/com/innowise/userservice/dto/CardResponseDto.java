@@ -11,7 +11,7 @@ import java.time.LocalDate;
  * Uses as response body in card-related API endpoints.
  */
 @Data
-public class CardInfoResponseDto {
+public class CardResponseDto {
     /** Automatically generated unique card number. */
     private String number;
 

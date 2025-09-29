@@ -55,5 +55,5 @@ public class User {
 
     /** List of cards associated with this user. Each user can have multiple cards. */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CardInfo> cards;
+    private List<Card> cards;
 }
