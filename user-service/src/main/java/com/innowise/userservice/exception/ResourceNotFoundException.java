@@ -1,6 +1,11 @@
 package com.innowise.userservice.exception;
 
+import java.io.Serial;
+
 public class ResourceNotFoundException extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID = 7551313319174438813L;
+
     private ResourceNotFoundException(String message) {
         super(message);
     }
