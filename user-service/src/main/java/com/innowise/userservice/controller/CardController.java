@@ -1,7 +1,7 @@
 package com.innowise.userservice.controller;
 
-import com.innowise.userservice.dto.CardRequestDto;
-import com.innowise.userservice.dto.CardResponseDto;
+import com.innowise.userservice.model.dto.CardRequestDto;
+import com.innowise.userservice.model.dto.CardResponseDto;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.service.CardService;
 import jakarta.validation.Valid;

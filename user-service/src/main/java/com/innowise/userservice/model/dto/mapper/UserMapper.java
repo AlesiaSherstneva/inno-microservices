@@ -1,8 +1,8 @@
-package com.innowise.userservice.dto.mapper;
+package com.innowise.userservice.model.dto.mapper;
 
-import com.innowise.userservice.dto.UserRequestDto;
-import com.innowise.userservice.dto.UserResponseDto;
-import com.innowise.userservice.entity.User;
+import com.innowise.userservice.model.dto.UserRequestDto;
+import com.innowise.userservice.model.dto.UserResponseDto;
+import com.innowise.userservice.model.entity.User;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

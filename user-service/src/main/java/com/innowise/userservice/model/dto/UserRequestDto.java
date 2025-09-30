@@ -1,4 +1,4 @@
-package com.innowise.userservice.dto;
+package com.innowise.userservice.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Email;

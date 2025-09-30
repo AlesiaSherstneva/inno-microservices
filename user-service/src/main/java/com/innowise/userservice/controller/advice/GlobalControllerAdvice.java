@@ -1,6 +1,6 @@
 package com.innowise.userservice.controller.advice;
 
-import com.innowise.userservice.dto.ErrorResponseDto;
+import com.innowise.userservice.model.dto.ErrorResponseDto;
 import com.innowise.userservice.exception.EmailAlreadyExistsException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import jakarta.validation.ConstraintViolationException;

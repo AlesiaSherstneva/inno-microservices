@@ -1,7 +1,7 @@
 package com.innowise.userservice.controller;
 
-import com.innowise.userservice.dto.UserRequestDto;
-import com.innowise.userservice.dto.UserResponseDto;
+import com.innowise.userservice.model.dto.UserRequestDto;
+import com.innowise.userservice.model.dto.UserResponseDto;
 import com.innowise.userservice.exception.EmailAlreadyExistsException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.service.UserService;

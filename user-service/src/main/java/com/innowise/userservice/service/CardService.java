@@ -1,9 +1,9 @@
 package com.innowise.userservice.service;
 
-import com.innowise.userservice.dto.CardRequestDto;
-import com.innowise.userservice.dto.CardResponseDto;
-import com.innowise.userservice.entity.Card;
-import com.innowise.userservice.entity.User;
+import com.innowise.userservice.model.dto.CardRequestDto;
+import com.innowise.userservice.model.dto.CardResponseDto;
+import com.innowise.userservice.model.entity.Card;
+import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.util.CardFieldsGenerator;
 

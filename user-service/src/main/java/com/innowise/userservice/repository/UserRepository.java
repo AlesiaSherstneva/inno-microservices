@@ -1,6 +1,6 @@
 package com.innowise.userservice.repository;
 
-import com.innowise.userservice.entity.User;
+import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.util.Constant;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

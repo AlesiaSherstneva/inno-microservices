@@ -1,6 +1,6 @@
 package com.innowise.userservice.util;
 
-import com.innowise.userservice.entity.User;
+import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.service.CardService;
 
 import java.util.Random;

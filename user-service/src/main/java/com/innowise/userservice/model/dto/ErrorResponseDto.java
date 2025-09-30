@@ -1,4 +1,4 @@
-package com.innowise.userservice.dto;
+package com.innowise.userservice.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.innowise.userservice.controller.advice.GlobalControllerAdvice;
