@@ -1,14 +1,15 @@
 package com.innowise.userservice.service.impl;
 
+import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.model.dto.CardRequestDto;
 import com.innowise.userservice.model.dto.CardResponseDto;
 import com.innowise.userservice.model.dto.mapper.CardMapper;
 import com.innowise.userservice.model.entity.Card;
 import com.innowise.userservice.model.entity.User;
-import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.repository.CardRepository;
 import com.innowise.userservice.repository.UserRepository;
 import com.innowise.userservice.service.CardService;
+import com.innowise.userservice.service.cache.CacheEvictor;
 import com.innowise.userservice.util.CardFieldsGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
     private final CardMapper cardMapper;
+    private final CacheEvictor cacheEvictor;
 
     @Override
     @Transactional(readOnly = true)
@@ -69,12 +71,19 @@ public class CardServiceImpl implements CardService {
 
         Card createdCard = cardRepository.save(newCard);
 
+        cacheEvictor.evictUser(userToAddCard.getId(), userToAddCard.getEmail());
+
         return cardMapper.toResponseDto(createdCard);
     }
 
     @Override
     @Transactional
     public void deleteCard(Long cardId) {
+        Card cardToDelete = cardRepository.findCardById(cardId)
+                .orElseThrow(() -> ResourceNotFoundException.cardNotFound(cardId));
+
+        cacheEvictor.evictUser(cardToDelete.getUser().getId(), cardToDelete.getUser().getEmail());
+
         cardRepository.deleteCardById(cardId);
     }
 }

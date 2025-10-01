@@ -3,6 +3,8 @@ package com.innowise.userservice.model.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -12,7 +14,10 @@ import java.util.List;
  * Uses as response body in user-related API endpoints.
  */
 @Data
-public class UserResponseDto {
+public class UserResponseDto implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1806232929607712539L;
+
     /** User's first name. */
     private String name;
 

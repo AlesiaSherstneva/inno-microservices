@@ -3,6 +3,8 @@ package com.innowise.userservice.model.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDate;
 
 /**
@@ -11,7 +13,10 @@ import java.time.LocalDate;
  * Uses as response body in card-related API endpoints.
  */
 @Data
-public class CardResponseDto {
+public class CardResponseDto implements Serializable {
+    @Serial
+    private static final long serialVersionUID = -939307596179203740L;
+
     /** Automatically generated unique card number. */
     private String number;
 
