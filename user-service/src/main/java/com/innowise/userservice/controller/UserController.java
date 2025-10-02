@@ -8,6 +8,7 @@ import com.innowise.userservice.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,37 +55,42 @@ public class UserController {
     }
 
     /**
-     * Retrieves users based on provided IDs or all users if no IDs are specified.
-     * Returns empty list if no users match the criteria.
-     *
-     * @param ids optional list of user IDs to filter by
-     * @return list of users
-     */
-    @GetMapping
-    public ResponseEntity<List<UserResponseDto>> getUsers(@RequestParam(required = false) List<Long> ids) {
-        List<UserResponseDto> retrievedUsers;
-
-        if (ids != null && !ids.isEmpty()) {
-            retrievedUsers = userService.getUsersByIds(ids);
-        } else {
-            retrievedUsers = userService.getAllUsers();
-        }
-
-        return ResponseEntity.ok(retrievedUsers);
-    }
-
-    /**
      * Retrieves a user by email address.
      *
      * @param email the email address, must be valid and not blank
      * @return the user data
      * @throws ResourceNotFoundException if the user with given email does not exist
      */
-    @GetMapping("/by-email")
+    @GetMapping(params = "email")
     public ResponseEntity<UserResponseDto> getUserByEmail(@RequestParam @NotBlank @Email String email) {
         UserResponseDto retrievedUser = userService.getUserByEmail(email);
 
         return ResponseEntity.ok(retrievedUser);
+    }
+
+    /**
+     * Retrieves specific users by their IDs.
+     *
+     * @param ids list of user IDs to filter by
+     * @return list of users, empty list if no users found by given IDs
+     */
+    @GetMapping(params = "ids")
+    public ResponseEntity<List<UserResponseDto>> getUsersByIds(@RequestParam @NotEmpty List<Long> ids) {
+        List<UserResponseDto> retrievedUsers = userService.getUsersByIds(ids);
+
+        return ResponseEntity.ok(retrievedUsers);
+    }
+
+    /**
+     * Retrieves all users in the system.
+     *
+     * @return list of all users, empty list if no users exist
+     */
+    @GetMapping
+    public ResponseEntity<List<UserResponseDto>> getUsers() {
+        List<UserResponseDto> retrievedUsers = userService.getAllUsers();
+
+        return ResponseEntity.ok(retrievedUsers);
     }
 
     /**

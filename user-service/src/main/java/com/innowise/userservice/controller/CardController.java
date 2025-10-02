@@ -5,6 +5,7 @@ import com.innowise.userservice.model.dto.CardResponseDto;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.service.CardService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -51,21 +52,26 @@ public class CardController {
     }
 
     /**
-     * Retrieves cards based on provided IDs or all cards if no IDs are specified.
-     * Returns empty list if no cards match the criteria.
+     * Retrieves specific cards by their IDs.
      *
-     * @param ids optional list of card IDs to filter by
-     * @return list of cards
+     * @param ids list of card IDs to filter by
+     * @return list of cards, empty list if no cards found by given IDs
+     */
+    @GetMapping(params = "ids")
+    public ResponseEntity<List<CardResponseDto>> getCardsByIds(@RequestParam @NotEmpty List<Long> ids) {
+        List<CardResponseDto> retrievedCards = cardService.getCardsByIds(ids);
+
+        return ResponseEntity.ok(retrievedCards);
+    }
+
+    /**
+     * Retrieves all cards in the system.
+     *
+     * @return list of all cards, empty list if no cards exist
      */
     @GetMapping
-    public ResponseEntity<List<CardResponseDto>> getCards(@RequestParam(required = false) List<Long> ids) {
-        List<CardResponseDto> retrievedCards;
-
-        if (ids != null && !ids.isEmpty()) {
-            retrievedCards = cardService.getCardsByIds(ids);
-        } else {
-            retrievedCards = cardService.getAllCards();
-        }
+    public ResponseEntity<List<CardResponseDto>> getCards() {
+        List<CardResponseDto> retrievedCards = cardService.getAllCards();
 
         return ResponseEntity.ok(retrievedCards);
     }
