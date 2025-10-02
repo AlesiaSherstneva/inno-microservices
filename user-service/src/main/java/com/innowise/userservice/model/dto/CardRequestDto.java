@@ -1,6 +1,7 @@
 package com.innowise.userservice.model.dto;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Data;
 
 /**
@@ -9,6 +10,7 @@ import lombok.Data;
  * Card number and other fields are generated automatically.
  */
 @Data
+@Builder
 public class CardRequestDto {
     /** Unique identifier of the user who will own the card. */
     @NotNull(message = "User's id is required")
