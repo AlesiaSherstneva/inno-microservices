@@ -7,13 +7,13 @@ import com.innowise.userservice.model.dto.UserResponseDto;
 import com.innowise.userservice.model.entity.Card;
 import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.service.impl.UserServiceImpl;
+import com.innowise.userservice.util.Constants;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -68,32 +68,32 @@ class UserServiceTest extends BaseServiceTest {
 
     @Test
     void getUserByIdWhenUserExistsTest() {
-        when(userRepository.findUserById(ID)).thenReturn(Optional.of(testUser));
+        when(userRepository.findUserById(Constants.ID)).thenReturn(Optional.of(testUser));
 
-        UserResponseDto resultDto = userService.getUserById(ID);
+        UserResponseDto resultDto = userService.getUserById(Constants.ID);
 
         assertUserResponseDtoFields(resultDto);
 
-        verify(userRepository, times(1)).findUserById(ID);
+        verify(userRepository, times(1)).findUserById(Constants.ID);
     }
 
     @Test
     void getUserByIdWhenUserDoesNotExistTest() {
-        when(userRepository.findUserById(ID)).thenReturn(Optional.empty());
+        when(userRepository.findUserById(Constants.ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userService.getUserById(ID))
+        assertThatThrownBy(() -> userService.getUserById(Constants.ID))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found")
-                .hasMessageContaining(String.valueOf(ID));
+                .hasMessageContaining(String.valueOf(Constants.ID));
 
-        verify(userRepository, times(1)).findUserById(ID);
+        verify(userRepository, times(1)).findUserById(Constants.ID);
     }
 
     @Test
     void getUsersByIdsWhenUsersExistTest() {
-        when(userRepository.findUsersByIdIn(IDS)).thenReturn(List.of(testUser));
+        when(userRepository.findUsersByIdIn(Constants.IDS)).thenReturn(List.of(testUser));
 
-        List<UserResponseDto> resultList = userService.getUsersByIds(IDS);
+        List<UserResponseDto> resultList = userService.getUsersByIds(Constants.IDS);
 
         assertThat(resultList).isNotNull().isNotEmpty().hasSize(1);
 
@@ -101,74 +101,74 @@ class UserServiceTest extends BaseServiceTest {
 
         assertUserResponseDtoFields(resultDto);
 
-        verify(userRepository, times(1)).findUsersByIdIn(IDS);
+        verify(userRepository, times(1)).findUsersByIdIn(Constants.IDS);
     }
 
     @Test
     void getUsersByIdsWhenUsersDoNotExistTest() {
-        when(userRepository.findUsersByIdIn(IDS)).thenReturn(Collections.emptyList());
+        when(userRepository.findUsersByIdIn(Constants.IDS)).thenReturn(Collections.emptyList());
 
-        List<UserResponseDto> resultDto = userService.getUsersByIds(IDS);
+        List<UserResponseDto> resultDto = userService.getUsersByIds(Constants.IDS);
 
         assertThat(resultDto).isNotNull().isEmpty();
 
-        verify(userRepository, times(1)).findUsersByIdIn(IDS);
+        verify(userRepository, times(1)).findUsersByIdIn(Constants.IDS);
     }
 
     @Test
     void getUserByEmailWhenUserExistsTest() {
-        when(userRepository.findUserByEmail(USER_EMAIL)).thenReturn(Optional.of(testUser));
+        when(userRepository.findUserByEmail(Constants.USER_EMAIL)).thenReturn(Optional.of(testUser));
 
-        UserResponseDto resultDto = userService.getUserByEmail(USER_EMAIL);
+        UserResponseDto resultDto = userService.getUserByEmail(Constants.USER_EMAIL);
 
         assertUserResponseDtoFields(resultDto);
 
-        verify(userRepository, times(1)).findUserByEmail(USER_EMAIL);
+        verify(userRepository, times(1)).findUserByEmail(Constants.USER_EMAIL);
     }
 
     @Test
     void getUserByEmailWhenUserDoesNotExistTest() {
-        when(userRepository.findUserByEmail(USER_EMAIL)).thenReturn(Optional.empty());
+        when(userRepository.findUserByEmail(Constants.USER_EMAIL)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userService.getUserByEmail(USER_EMAIL))
+        assertThatThrownBy(() -> userService.getUserByEmail(Constants.USER_EMAIL))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found")
-                .hasMessageContaining(USER_EMAIL);
+                .hasMessageContaining(Constants.USER_EMAIL);
 
-        verify(userRepository, times(1)).findUserByEmail(USER_EMAIL);
+        verify(userRepository, times(1)).findUserByEmail(Constants.USER_EMAIL);
     }
 
     @Test
     void createUserSuccessfulTest() {
         UserRequestDto requestDto = UserRequestDto.builder()
-                .email(USER_EMAIL)
+                .email(Constants.USER_EMAIL)
                 .build();
 
-        when(userRepository.existsByEmail(USER_EMAIL)).thenReturn(false);
+        when(userRepository.existsByEmail(Constants.USER_EMAIL)).thenReturn(false);
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
         UserResponseDto resultDto = userService.createUser(requestDto);
 
         assertUserResponseDtoFields(resultDto);
 
-        verify(userRepository, times(1)).existsByEmail(USER_EMAIL);
+        verify(userRepository, times(1)).existsByEmail(Constants.USER_EMAIL);
         verify(userRepository, times(1)).save(any(User.class));
     }
 
     @Test
     void createUserWhenEmailAlreadyExistsTest() {
         UserRequestDto requestDto = UserRequestDto.builder()
-                .email(USER_EMAIL)
+                .email(Constants.USER_EMAIL)
                 .build();
 
-        when(userRepository.existsByEmail(USER_EMAIL)).thenReturn(true);
+        when(userRepository.existsByEmail(Constants.USER_EMAIL)).thenReturn(true);
 
         assertThatThrownBy(() -> userService.createUser(requestDto))
                 .isInstanceOf(EmailAlreadyExistsException.class)
                 .hasMessageContaining("Email already exists in the database")
-                .hasMessageContaining(USER_EMAIL);
+                .hasMessageContaining(Constants.USER_EMAIL);
 
-        verify(userRepository, times(1)).existsByEmail(USER_EMAIL);
+        verify(userRepository, times(1)).existsByEmail(Constants.USER_EMAIL);
     }
 
     @Test
@@ -176,98 +176,95 @@ class UserServiceTest extends BaseServiceTest {
         User testUser = buildTestUser();
         testUser.setCards(List.of(new Card()));
 
-        String newUserSurname = "New-Surname", newUserEmail = "new-email@test.test";
-        LocalDate newBirthDate = NOW.plusDays(3);
-
         UserRequestDto requestDto = UserRequestDto.builder()
-                .name(USER_NAME)
-                .surname(newUserSurname)
-                .birthDate(newBirthDate)
-                .email(newUserEmail)
+                .name(Constants.USER_NAME)
+                .surname(Constants.NEW_USER_SURNAME)
+                .birthDate(Constants.NEW_USER_LOCAL_DAY)
+                .email(Constants.NEW_USER_EMAIL)
                 .build();
 
-        String expectedHolderName = String.join(" ", USER_NAME, newUserSurname).toUpperCase();
+        String expectedHolderName = String.join(" ", Constants.USER_NAME, Constants.NEW_USER_SURNAME).toUpperCase();
 
-        when(userRepository.findUserById(ID)).thenReturn(Optional.of(testUser));
-        when(userRepository.existsByEmail(newUserEmail)).thenReturn(false);
-        doNothing().when(cardRepository).updateHolderByUserId(ID, expectedHolderName);
-        doNothing().when(userRepository).updateUser(ID, USER_NAME, newUserSurname, newBirthDate, newUserEmail);
-        doNothing().when(cacheEvictor).evictUser(ID, USER_EMAIL, newUserEmail);
+        when(userRepository.findUserById(Constants.ID)).thenReturn(Optional.of(testUser));
+        when(userRepository.existsByEmail(Constants.NEW_USER_EMAIL)).thenReturn(false);
+        doNothing().when(cardRepository).updateHolderByUserId(Constants.ID, expectedHolderName);
+        doNothing().when(userRepository).updateUser(Constants.ID, Constants.USER_NAME,
+                Constants.NEW_USER_SURNAME, Constants.NEW_USER_LOCAL_DAY, Constants.NEW_USER_EMAIL);
+        doNothing().when(cacheEvictor).evictUser(Constants.ID, Constants.USER_EMAIL, Constants.NEW_USER_EMAIL);
 
-        UserResponseDto resultDto = userService.updateUser(ID, requestDto);
+        UserResponseDto resultDto = userService.updateUser(Constants.ID, requestDto);
 
         assertAll(
                 () -> assertThat(resultDto).isNotNull(),
-                () -> assertThat(resultDto.getName()).isNotBlank().isEqualTo(USER_NAME),
-                () -> assertThat(resultDto.getSurname()).isNotBlank().isEqualTo(newUserSurname),
-                () -> assertThat(resultDto.getBirthDate()).isNotNull().isEqualTo(newBirthDate),
-                () -> assertThat(resultDto.getEmail()).isNotBlank().isEqualTo(newUserEmail),
+                () -> assertThat(resultDto.getName()).isNotBlank().isEqualTo(Constants.USER_NAME),
+                () -> assertThat(resultDto.getSurname()).isNotBlank().isEqualTo(Constants.NEW_USER_SURNAME),
+                () -> assertThat(resultDto.getBirthDate()).isNotNull().isEqualTo(Constants.NEW_USER_LOCAL_DAY),
+                () -> assertThat(resultDto.getEmail()).isNotBlank().isEqualTo(Constants.NEW_USER_EMAIL),
                 () -> assertThat(resultDto.getCards()).isNotNull().isNotEmpty().hasSize(1),
                 () -> assertThat(resultDto.getCards().get(0).getHolder()).isNotBlank().isEqualTo(expectedHolderName)
         );
 
-        verify(userRepository, times(1)).findUserById(ID);
-        verify(userRepository, times(1)).existsByEmail(newUserEmail);
-        verify(cardRepository, times(1)).updateHolderByUserId(ID, expectedHolderName);
-        verify(userRepository, times(1)).updateUser(ID, USER_NAME, newUserSurname, newBirthDate, newUserEmail);
-        verify(cacheEvictor, times(1)).evictUser(ID, USER_EMAIL, newUserEmail);
+        verify(userRepository, times(1)).findUserById(Constants.ID);
+        verify(userRepository, times(1)).existsByEmail(Constants.NEW_USER_EMAIL);
+        verify(cardRepository, times(1)).updateHolderByUserId(Constants.ID, expectedHolderName);
+        verify(userRepository, times(1)).updateUser(Constants.ID, Constants.USER_NAME, Constants.NEW_USER_SURNAME, Constants.NEW_USER_LOCAL_DAY, Constants.NEW_USER_EMAIL);
+        verify(cacheEvictor, times(1)).evictUser(Constants.ID, Constants.USER_EMAIL, Constants.NEW_USER_EMAIL);
     }
 
     @Test
     void updateUserWhenUserDoesNotExistTest() {
         UserRequestDto requestDto = UserRequestDto.builder().build();
 
-        when(userRepository.findUserById(ID)).thenReturn(Optional.empty());
+        when(userRepository.findUserById(Constants.ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userService.updateUser(ID, requestDto))
+        assertThatThrownBy(() -> userService.updateUser(Constants.ID, requestDto))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found")
-                .hasMessageContaining(String.valueOf(ID));
+                .hasMessageContaining(String.valueOf(Constants.ID));
 
-        verify(userRepository, times(1)).findUserById(ID);
+        verify(userRepository, times(1)).findUserById(Constants.ID);
     }
 
     @Test
     void updateUserWhenEmailAlreadyExistsTest() {
-        String newUserEmail = "new-email@test.test";
         UserRequestDto requestDto = UserRequestDto.builder()
-                .email(newUserEmail)
+                .email(Constants.NEW_USER_EMAIL)
                 .build();
 
-        when(userRepository.findUserById(ID)).thenReturn(Optional.of(testUser));
-        when(userRepository.existsByEmail(newUserEmail)).thenReturn(true);
+        when(userRepository.findUserById(Constants.ID)).thenReturn(Optional.of(testUser));
+        when(userRepository.existsByEmail(Constants.NEW_USER_EMAIL)).thenReturn(true);
 
-        assertThatThrownBy(() -> userService.updateUser(ID, requestDto))
+        assertThatThrownBy(() -> userService.updateUser(Constants.ID, requestDto))
                 .isInstanceOf(EmailAlreadyExistsException.class)
                 .hasMessageContaining("Email already exists in the database")
-                .hasMessageContaining(newUserEmail);
+                .hasMessageContaining(Constants.NEW_USER_EMAIL);
 
-        verify(userRepository, times(1)).findUserById(ID);
-        verify(userRepository, times(1)).existsByEmail(newUserEmail);
+        verify(userRepository, times(1)).findUserById(Constants.ID);
+        verify(userRepository, times(1)).existsByEmail(Constants.NEW_USER_EMAIL);
     }
 
     @Test
     void deleteUserSuccessfulTest() {
-        when(userRepository.findUserById(ID)).thenReturn(Optional.of(testUser));
-        doNothing().when(cacheEvictor).evictUser(ID, USER_EMAIL);
+        when(userRepository.findUserById(Constants.ID)).thenReturn(Optional.of(testUser));
+        doNothing().when(cacheEvictor).evictUser(Constants.ID, Constants.USER_EMAIL);
 
-        userService.deleteUser(ID);
+        userService.deleteUser(Constants.ID);
 
-        verify(userRepository, times(1)).findUserById(ID);
-        verify(cacheEvictor, times(1)).evictUser(ID, USER_EMAIL);
-        verify(userRepository, times(1)).deleteUserById(ID);
+        verify(userRepository, times(1)).findUserById(Constants.ID);
+        verify(cacheEvictor, times(1)).evictUser(Constants.ID, Constants.USER_EMAIL);
+        verify(userRepository, times(1)).deleteUserById(Constants.ID);
     }
 
     @Test
     void deleteUserWhenUserDoesNotExistTest() {
-        when(userRepository.findUserById(ID)).thenReturn(Optional.empty());
+        when(userRepository.findUserById(Constants.ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userService.deleteUser(ID))
+        assertThatThrownBy(() -> userService.deleteUser(Constants.ID))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found")
-                .hasMessageContaining(String.valueOf(ID));
+                .hasMessageContaining(String.valueOf(Constants.ID));
 
-        verify(userRepository, times(1)).findUserById(ID);
+        verify(userRepository, times(1)).findUserById(Constants.ID);
     }
 
     @AfterEach
@@ -278,10 +275,10 @@ class UserServiceTest extends BaseServiceTest {
     private void assertUserResponseDtoFields(UserResponseDto responseDto) {
         assertAll(
                 () -> assertThat(responseDto).isNotNull(),
-                () -> assertThat(responseDto.getName()).isNotBlank().isEqualTo(USER_NAME),
-                () -> assertThat(responseDto.getSurname()).isNotBlank().isEqualTo(USER_NAME),
-                () -> assertThat(responseDto.getBirthDate()).isNotNull().isEqualTo(NOW),
-                () -> assertThat(responseDto.getEmail()).isNotBlank().isEqualTo(USER_EMAIL)
+                () -> assertThat(responseDto.getName()).isNotBlank().isEqualTo(Constants.USER_NAME),
+                () -> assertThat(responseDto.getSurname()).isNotBlank().isEqualTo(Constants.USER_NAME),
+                () -> assertThat(responseDto.getBirthDate()).isNotNull().isEqualTo(Constants.LOCAL_DATE_YESTERDAY),
+                () -> assertThat(responseDto.getEmail()).isNotBlank().isEqualTo(Constants.USER_EMAIL)
         );
     }
 }
