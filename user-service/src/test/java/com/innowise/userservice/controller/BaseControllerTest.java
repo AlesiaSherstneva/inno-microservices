@@ -7,7 +7,7 @@ import com.innowise.userservice.repository.CardRepository;
 import com.innowise.userservice.repository.UserRepository;
 import com.innowise.userservice.service.cache.CacheEvictor;
 import com.innowise.userservice.util.CardFieldsGenerator;
-import com.innowise.userservice.util.Constants;
+import com.innowise.userservice.util.TestConstant;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -55,10 +55,10 @@ public abstract class BaseControllerTest {
 
     protected static User buildTestUser() {
         return User.builder()
-                .name(Constants.USER_NAME)
-                .surname(Constants.USER_NAME)
-                .birthDate(Constants.LOCAL_DATE_YESTERDAY)
-                .email(Constants.USER_EMAIL)
+                .name(TestConstant.USER_NAME)
+                .surname(TestConstant.USER_NAME)
+                .birthDate(TestConstant.LOCAL_DATE_YESTERDAY)
+                .email(TestConstant.USER_EMAIL)
                 .build();
     }
 
@@ -67,7 +67,7 @@ public abstract class BaseControllerTest {
                 .user(user)
                 .number(CardFieldsGenerator.generateCardNumber())
                 .holder(CardFieldsGenerator.formatCardHolderName(user))
-                .expirationDate(Constants.LOCAL_DATE_YESTERDAY)
+                .expirationDate(TestConstant.LOCAL_DATE_YESTERDAY)
                 .build();
     }
 

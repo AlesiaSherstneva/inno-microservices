@@ -7,7 +7,7 @@ import com.innowise.userservice.model.entity.Card;
 import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.service.impl.CardServiceImpl;
 import com.innowise.userservice.util.CardFieldsGenerator;
-import com.innowise.userservice.util.Constants;
+import com.innowise.userservice.util.TestConstant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ class CardServiceTest extends BaseServiceTest {
                 .user(testUser)
                 .number(CardFieldsGenerator.generateCardNumber())
                 .holder(CardFieldsGenerator.formatCardHolderName(testUser))
-                .expirationDate(Constants.LOCAL_DATE_YESTERDAY.plusYears(CardFieldsGenerator.CARD_VALIDITY_YEARS))
+                .expirationDate(TestConstant.LOCAL_DATE_YESTERDAY.plusYears(CardFieldsGenerator.CARD_VALIDITY_YEARS))
                 .build();
     }
 
@@ -77,32 +77,32 @@ class CardServiceTest extends BaseServiceTest {
 
     @Test
     void getCardByIdWhenCardExistsTest() {
-        when(cardRepository.findCardById(Constants.ID)).thenReturn(Optional.of(testCard));
+        when(cardRepository.findCardById(TestConstant.ID)).thenReturn(Optional.of(testCard));
 
-        CardResponseDto resultDto = cardService.getCardById(Constants.ID);
+        CardResponseDto resultDto = cardService.getCardById(TestConstant.ID);
 
         assertCardResponseDtoFields(resultDto);
 
-        verify(cardRepository, times(1)).findCardById(Constants.ID);
+        verify(cardRepository, times(1)).findCardById(TestConstant.ID);
     }
 
     @Test
     void getCardByIdWhenCardDoesNotExistTest() {
-        when(cardRepository.findCardById(Constants.ID)).thenReturn(Optional.empty());
+        when(cardRepository.findCardById(TestConstant.ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> cardService.getCardById(Constants.ID))
+        assertThatThrownBy(() -> cardService.getCardById(TestConstant.ID))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Card not found")
-                .hasMessageContaining(String.valueOf(Constants.ID));
+                .hasMessageContaining(String.valueOf(TestConstant.ID));
 
-        verify(cardRepository, times(1)).findCardById(Constants.ID);
+        verify(cardRepository, times(1)).findCardById(TestConstant.ID);
     }
 
     @Test
     void getCardsByIdsWhenCardsExistTest() {
-        when(cardRepository.findCardsByIdIn(Constants.IDS)).thenReturn(List.of(testCard));
+        when(cardRepository.findCardsByIdIn(TestConstant.IDS)).thenReturn(List.of(testCard));
 
-        List<CardResponseDto> resultList = cardService.getCardsByIds(Constants.IDS);
+        List<CardResponseDto> resultList = cardService.getCardsByIds(TestConstant.IDS);
 
         assertThat(resultList).isNotNull().isNotEmpty().hasSize(1);
 
@@ -110,80 +110,80 @@ class CardServiceTest extends BaseServiceTest {
 
         assertCardResponseDtoFields(resultDto);
 
-        verify(cardRepository, times(1)).findCardsByIdIn(Constants.IDS);
+        verify(cardRepository, times(1)).findCardsByIdIn(TestConstant.IDS);
     }
 
     @Test
     void getCardsByIdsWhenCardsDoNotExistTest() {
-        when(cardRepository.findCardsByIdIn(Constants.IDS)).thenReturn(Collections.emptyList());
+        when(cardRepository.findCardsByIdIn(TestConstant.IDS)).thenReturn(Collections.emptyList());
 
-        List<CardResponseDto> resultList = cardService.getCardsByIds(Constants.IDS);
+        List<CardResponseDto> resultList = cardService.getCardsByIds(TestConstant.IDS);
 
         assertThat(resultList).isNotNull().isEmpty();
 
-        verify(cardRepository, times(1)).findCardsByIdIn(Constants.IDS);
+        verify(cardRepository, times(1)).findCardsByIdIn(TestConstant.IDS);
     }
 
     @Test
     void createCardWhenUserExistsTest() {
         CardRequestDto requestDto = CardRequestDto.builder()
-                .userId(Constants.ID)
+                .userId(TestConstant.ID)
                 .build();
 
-        when(userRepository.findUserById(Constants.ID)).thenReturn(Optional.of(testUser));
+        when(userRepository.findUserById(TestConstant.ID)).thenReturn(Optional.of(testUser));
         when(cardRepository.existsByNumber(anyString())).thenReturn(false);
         when(cardRepository.save(any(Card.class))).thenReturn(testCard);
-        doNothing().when(cacheEvictor).evictUser(Constants.ID, Constants.USER_EMAIL);
+        doNothing().when(cacheEvictor).evictUser(TestConstant.ID, TestConstant.USER_EMAIL);
 
         CardResponseDto resultDto = cardService.createCard(requestDto);
 
         assertCardResponseDtoFields(resultDto);
 
-        verify(userRepository, times(1)).findUserById(Constants.ID);
+        verify(userRepository, times(1)).findUserById(TestConstant.ID);
         verify(cardRepository, times(1)).existsByNumber(anyString());
         verify(cardRepository, times(1)).save(any(Card.class));
-        verify(cacheEvictor, times(1)).evictUser(Constants.ID, Constants.USER_EMAIL);
+        verify(cacheEvictor, times(1)).evictUser(TestConstant.ID, TestConstant.USER_EMAIL);
     }
 
     @Test
     void createCardWhenUserDoesNotExistTest() {
         CardRequestDto requestDto = CardRequestDto.builder()
-                .userId(Constants.ID)
+                .userId(TestConstant.ID)
                 .build();
 
-        when(userRepository.findUserById(Constants.ID)).thenReturn(Optional.empty());
+        when(userRepository.findUserById(TestConstant.ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cardService.createCard(requestDto))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found")
-                .hasMessageContaining(String.valueOf(Constants.ID));
+                .hasMessageContaining(String.valueOf(TestConstant.ID));
 
-        verify(userRepository, times(1)).findUserById(Constants.ID);
+        verify(userRepository, times(1)).findUserById(TestConstant.ID);
     }
 
 
     @Test
     void deleteCardSuccessfulTest() {
-        when(cardRepository.findCardById(Constants.ID)).thenReturn(Optional.of(testCard));
-        doNothing().when(cacheEvictor).evictUser(Constants.ID, Constants.USER_EMAIL);
+        when(cardRepository.findCardById(TestConstant.ID)).thenReturn(Optional.of(testCard));
+        doNothing().when(cacheEvictor).evictUser(TestConstant.ID, TestConstant.USER_EMAIL);
 
-        cardService.deleteCard(Constants.ID);
+        cardService.deleteCard(TestConstant.ID);
 
-        verify(cardRepository, times(1)).findCardById(Constants.ID);
-        verify(cacheEvictor, times(1)).evictUser(Constants.ID, Constants.USER_EMAIL);
-        verify(cardRepository, times(1)).deleteCardById(Constants.ID);
+        verify(cardRepository, times(1)).findCardById(TestConstant.ID);
+        verify(cacheEvictor, times(1)).evictUser(TestConstant.ID, TestConstant.USER_EMAIL);
+        verify(cardRepository, times(1)).deleteCardById(TestConstant.ID);
     }
 
     @Test
     void deleteCardWhenCardDoesNotExistTest() {
-        when(cardRepository.findCardById(Constants.ID)).thenReturn(Optional.empty());
+        when(cardRepository.findCardById(TestConstant.ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> cardService.deleteCard(Constants.ID))
+        assertThatThrownBy(() -> cardService.deleteCard(TestConstant.ID))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Card not found")
-                .hasMessageContaining(String.valueOf(Constants.ID));
+                .hasMessageContaining(String.valueOf(TestConstant.ID));
 
-        verify(cardRepository, times(1)).findCardById(Constants.ID);
+        verify(cardRepository, times(1)).findCardById(TestConstant.ID);
     }
 
     @AfterEach

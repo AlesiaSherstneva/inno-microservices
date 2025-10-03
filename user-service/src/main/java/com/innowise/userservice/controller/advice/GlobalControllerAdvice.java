@@ -1,13 +1,12 @@
 package com.innowise.userservice.controller.advice;
 
-import com.innowise.userservice.model.dto.ErrorResponseDto;
 import com.innowise.userservice.exception.EmailAlreadyExistsException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
+import com.innowise.userservice.model.dto.ErrorResponseDto;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -72,16 +71,6 @@ public class GlobalControllerAdvice {
                 .build();
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-    }
-
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ErrorResponseDto> handleMissingRequestParameterException(MissingServletRequestParameterException ex) {
-        ErrorResponseDto errorResponse = ErrorResponseDto.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .errorMessage(String.format("Missing required parameter: %s", ex.getParameterName()))
-                .build();
-
-        return ResponseEntity.badRequest().body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)

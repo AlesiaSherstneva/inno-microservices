@@ -6,7 +6,7 @@ import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.repository.CardRepository;
 import com.innowise.userservice.repository.UserRepository;
 import com.innowise.userservice.service.cache.CacheEvictor;
-import com.innowise.userservice.util.Constants;
+import com.innowise.userservice.util.TestConstant;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -26,11 +26,11 @@ public abstract class BaseServiceTest {
 
     protected static User buildTestUser() {
         return User.builder()
-                .id(Constants.ID)
-                .name(Constants.USER_NAME)
-                .surname(Constants.USER_NAME)
-                .birthDate(Constants.LOCAL_DATE_YESTERDAY)
-                .email(Constants.USER_EMAIL)
+                .id(TestConstant.ID)
+                .name(TestConstant.USER_NAME)
+                .surname(TestConstant.USER_NAME)
+                .birthDate(TestConstant.LOCAL_DATE_YESTERDAY)
+                .email(TestConstant.USER_EMAIL)
                 .build();
     }
 }

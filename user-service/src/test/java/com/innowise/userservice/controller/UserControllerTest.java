@@ -2,7 +2,7 @@ package com.innowise.userservice.controller;
 
 import com.innowise.userservice.model.dto.UserRequestDto;
 import com.innowise.userservice.model.entity.User;
-import com.innowise.userservice.util.Constants;
+import com.innowise.userservice.util.TestConstant;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -34,24 +34,24 @@ class UserControllerTest extends BaseControllerTest {
         mockMvc.perform(get(String.format("%s/%d", URL, testUser.getId())))
                 .andExpectAll(
                         status().isOk(),
-                        jsonPath(Constants.JSON_PATH_USER_NAME).value(testUser.getName()),
-                        jsonPath(Constants.JSON_PATH_USER_SURNAME).value(testUser.getSurname()),
-                        jsonPath(Constants.JSON_PATH_USER_BIRTH_DATE)
+                        jsonPath(TestConstant.JSON_PATH_USER_NAME).value(testUser.getName()),
+                        jsonPath(TestConstant.JSON_PATH_USER_SURNAME).value(testUser.getSurname()),
+                        jsonPath(TestConstant.JSON_PATH_USER_BIRTH_DATE)
                                 .value(testUser.getBirthDate().format(DateTimeFormatter.ISO_LOCAL_DATE)),
-                        jsonPath(Constants.JSON_PATH_USER_EMAIL).value(testUser.getEmail()),
-                        jsonPath(Constants.JSON_PATH_USER_CARDS).isArray(),
-                        jsonPath(Constants.JSON_PATH_USER_CARDS, hasSize(1))
+                        jsonPath(TestConstant.JSON_PATH_USER_EMAIL).value(testUser.getEmail()),
+                        jsonPath(TestConstant.JSON_PATH_USER_CARDS).isArray(),
+                        jsonPath(TestConstant.JSON_PATH_USER_CARDS, hasSize(1))
                 );
     }
 
     @Test
     void getUserByIdWhenUserDoesNotExistIntegrationTest() throws Exception {
-        mockMvc.perform(get(String.format("%s/%d", URL, Constants.ID)))
+        mockMvc.perform(get(String.format("%s/%d", URL, TestConstant.ID)))
                 .andExpectAll(
                         status().isNotFound(),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("User not found with id")),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("User not found with id")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
 
@@ -63,25 +63,25 @@ class UserControllerTest extends BaseControllerTest {
                         .param("email", testUser.getEmail()))
                 .andExpectAll(
                         status().isOk(),
-                        jsonPath(Constants.JSON_PATH_USER_NAME).value(testUser.getName()),
-                        jsonPath(Constants.JSON_PATH_USER_SURNAME).value(testUser.getSurname()),
-                        jsonPath(Constants.JSON_PATH_USER_BIRTH_DATE)
+                        jsonPath(TestConstant.JSON_PATH_USER_NAME).value(testUser.getName()),
+                        jsonPath(TestConstant.JSON_PATH_USER_SURNAME).value(testUser.getSurname()),
+                        jsonPath(TestConstant.JSON_PATH_USER_BIRTH_DATE)
                                 .value(testUser.getBirthDate().format(DateTimeFormatter.ISO_LOCAL_DATE)),
-                        jsonPath(Constants.JSON_PATH_USER_EMAIL).value(testUser.getEmail()),
-                        jsonPath(Constants.JSON_PATH_USER_CARDS).isArray(),
-                        jsonPath(Constants.JSON_PATH_USER_CARDS).isEmpty()
+                        jsonPath(TestConstant.JSON_PATH_USER_EMAIL).value(testUser.getEmail()),
+                        jsonPath(TestConstant.JSON_PATH_USER_CARDS).isArray(),
+                        jsonPath(TestConstant.JSON_PATH_USER_CARDS).isEmpty()
                 );
     }
 
     @Test
     void getUserByEmailWhenUserDoesNotExistIntegrationTest() throws Exception {
         mockMvc.perform(get(URL)
-                        .param("email", Constants.USER_EMAIL))
+                        .param("email", TestConstant.USER_EMAIL))
                 .andExpectAll(
                         status().isNotFound(),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("User not found with email")),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("User not found with email")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
 
@@ -91,10 +91,10 @@ class UserControllerTest extends BaseControllerTest {
                         .param("email", ""))
                 .andExpectAll(
                         status().isBadRequest(),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.BAD_REQUEST.value()),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Constraint violation")),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_DETAILS, hasItem(containsString("email: must not be blank"))),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.BAD_REQUEST.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Constraint violation")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_DETAILS, hasItem(containsString("email: must not be blank"))),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
 
@@ -107,19 +107,19 @@ class UserControllerTest extends BaseControllerTest {
                         .param("ids", ids))
                 .andExpectAll(
                         status().isOk(),
-                        jsonPath(Constants.JSON_PATH_COMMON_ARRAY).isArray(),
-                        jsonPath(Constants.JSON_PATH_COMMON_ARRAY, hasSize(1))
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY, hasSize(1))
                 );
     }
 
     @Test
     void getUsersByIdsWhenUserDoesNotExistIntegrationTest() throws Exception {
         mockMvc.perform(get(URL)
-                        .param("ids", String.valueOf(Constants.ID)))
+                        .param("ids", String.valueOf(TestConstant.ID)))
                 .andExpectAll(
                         status().isOk(),
-                        jsonPath(Constants.JSON_PATH_COMMON_ARRAY).isArray(),
-                        jsonPath(Constants.JSON_PATH_COMMON_ARRAY).isEmpty()
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isEmpty()
                 );
     }
 
@@ -130,8 +130,8 @@ class UserControllerTest extends BaseControllerTest {
         mockMvc.perform(get(URL))
                 .andExpectAll(
                         status().isOk(),
-                        jsonPath(Constants.JSON_PATH_COMMON_ARRAY).isArray(),
-                        jsonPath(Constants.JSON_PATH_COMMON_ARRAY, hasSize(1))
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY, hasSize(1))
                 );
     }
 
@@ -140,18 +140,18 @@ class UserControllerTest extends BaseControllerTest {
         mockMvc.perform(get(URL))
                 .andExpectAll(
                         status().isOk(),
-                        jsonPath(Constants.JSON_PATH_COMMON_ARRAY).isArray(),
-                        jsonPath(Constants.JSON_PATH_COMMON_ARRAY).isEmpty()
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isEmpty()
                 );
     }
 
     @Test
     void createUserSuccessfulIntegrationTest() throws Exception {
         UserRequestDto requestDto = UserRequestDto.builder()
-                .name(Constants.USER_NAME)
-                .surname(Constants.USER_NAME)
-                .birthDate(Constants.LOCAL_DATE_YESTERDAY)
-                .email(Constants.USER_EMAIL)
+                .name(TestConstant.USER_NAME)
+                .surname(TestConstant.USER_NAME)
+                .birthDate(TestConstant.LOCAL_DATE_YESTERDAY)
+                .email(TestConstant.USER_EMAIL)
                 .build();
 
         mockMvc.perform(post(URL)
@@ -159,20 +159,20 @@ class UserControllerTest extends BaseControllerTest {
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpectAll(
                         status().isCreated(),
-                        jsonPath(Constants.JSON_PATH_USER_NAME).value(requestDto.getName()),
-                        jsonPath(Constants.JSON_PATH_USER_SURNAME).value(requestDto.getSurname()),
-                        jsonPath(Constants.JSON_PATH_USER_BIRTH_DATE)
+                        jsonPath(TestConstant.JSON_PATH_USER_NAME).value(requestDto.getName()),
+                        jsonPath(TestConstant.JSON_PATH_USER_SURNAME).value(requestDto.getSurname()),
+                        jsonPath(TestConstant.JSON_PATH_USER_BIRTH_DATE)
                                 .value(requestDto.getBirthDate().format(DateTimeFormatter.ISO_LOCAL_DATE)),
-                        jsonPath(Constants.JSON_PATH_USER_EMAIL).value(requestDto.getEmail())
+                        jsonPath(TestConstant.JSON_PATH_USER_EMAIL).value(requestDto.getEmail())
                 );
     }
 
     @Test
     void createUserWithNotValidFieldsIntegrationTest() throws Exception {
         UserRequestDto requestDto = UserRequestDto.builder()
-                .name(String.join("", Constants.USER_NAME, "123"))
+                .name(String.join("", TestConstant.USER_NAME, "123"))
                 .birthDate(LocalDate.now())
-                .email(Constants.USER_EMAIL.replace("@", ""))
+                .email(TestConstant.USER_EMAIL.replace("@", ""))
                 .build();
 
         mockMvc.perform(post(URL)
@@ -180,24 +180,24 @@ class UserControllerTest extends BaseControllerTest {
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpectAll(
                         status().isBadRequest(),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.BAD_REQUEST.value()),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Validation failed")),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_DETAILS,
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.BAD_REQUEST.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Validation failed")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_DETAILS,
                                 hasItem(containsString("Name should start with capital letter and contain only English letters and hyphens"))),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_DETAILS, hasItem(containsString("Surname is required"))),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_DETAILS, hasItem(containsString("Birth date must be in the past"))),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_DETAILS, hasItem(containsString("Email should be valid"))),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_DETAILS, hasItem(containsString("Surname is required"))),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_DETAILS, hasItem(containsString("Birth date must be in the past"))),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_DETAILS, hasItem(containsString("Email should be valid"))),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
 
     @Test
     void createUserWhenEmailAlreadyExistsIntegrationTest() throws Exception {
         UserRequestDto requestDto = UserRequestDto.builder()
-                .name(Constants.USER_NAME)
-                .surname(Constants.USER_NAME)
-                .birthDate(Constants.LOCAL_DATE_YESTERDAY)
-                .email(Constants.USER_EMAIL)
+                .name(TestConstant.USER_NAME)
+                .surname(TestConstant.USER_NAME)
+                .birthDate(TestConstant.LOCAL_DATE_YESTERDAY)
+                .email(TestConstant.USER_EMAIL)
                 .build();
 
         testUser = userRepository.save(buildTestUser());
@@ -207,9 +207,9 @@ class UserControllerTest extends BaseControllerTest {
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpectAll(
                         status().isConflict(),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.CONFLICT.value()),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Email already exists in the database")),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.CONFLICT.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Email already exists in the database")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
 
@@ -219,10 +219,10 @@ class UserControllerTest extends BaseControllerTest {
         cardRepository.save(buildTestCard(testUser));
 
         UserRequestDto requestDto = UserRequestDto.builder()
-                .name(Constants.USER_NAME)
-                .surname(Constants.NEW_USER_SURNAME)
-                .birthDate(Constants.NEW_USER_LOCAL_DAY)
-                .email(Constants.NEW_USER_EMAIL)
+                .name(TestConstant.USER_NAME)
+                .surname(TestConstant.NEW_USER_SURNAME)
+                .birthDate(TestConstant.NEW_USER_LOCAL_DAY)
+                .email(TestConstant.NEW_USER_EMAIL)
                 .build();
 
         doNothing().when(cacheEvictor).evictUser(testUser.getId(), testUser.getEmail(), requestDto.getEmail());
@@ -232,35 +232,35 @@ class UserControllerTest extends BaseControllerTest {
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpectAll(
                         status().isOk(),
-                        jsonPath(Constants.JSON_PATH_USER_NAME).value(Constants.USER_NAME),
-                        jsonPath(Constants.JSON_PATH_USER_SURNAME).value(Constants.NEW_USER_SURNAME),
-                        jsonPath(Constants.JSON_PATH_USER_BIRTH_DATE)
-                                .value(Constants.NEW_USER_LOCAL_DAY.format(DateTimeFormatter.ISO_LOCAL_DATE)),
-                        jsonPath(Constants.JSON_PATH_USER_EMAIL).value(Constants.NEW_USER_EMAIL),
-                        jsonPath(Constants.JSON_PATH_USER_CARDS).isArray(),
-                        jsonPath(Constants.JSON_PATH_USER_CARDS, hasSize(1)),
-                        jsonPath(String.format("%s[0].holder", Constants.JSON_PATH_USER_CARDS))
-                                .value(String.join(" ", Constants.USER_NAME, Constants.NEW_USER_SURNAME).toUpperCase())
+                        jsonPath(TestConstant.JSON_PATH_USER_NAME).value(TestConstant.USER_NAME),
+                        jsonPath(TestConstant.JSON_PATH_USER_SURNAME).value(TestConstant.NEW_USER_SURNAME),
+                        jsonPath(TestConstant.JSON_PATH_USER_BIRTH_DATE)
+                                .value(TestConstant.NEW_USER_LOCAL_DAY.format(DateTimeFormatter.ISO_LOCAL_DATE)),
+                        jsonPath(TestConstant.JSON_PATH_USER_EMAIL).value(TestConstant.NEW_USER_EMAIL),
+                        jsonPath(TestConstant.JSON_PATH_USER_CARDS).isArray(),
+                        jsonPath(TestConstant.JSON_PATH_USER_CARDS, hasSize(1)),
+                        jsonPath(String.format("%s[0].holder", TestConstant.JSON_PATH_USER_CARDS))
+                                .value(String.join(" ", TestConstant.USER_NAME, TestConstant.NEW_USER_SURNAME).toUpperCase())
                 );
     }
 
     @Test
     void updateUserWhenUserDoesNotExistIntegrationTest() throws Exception {
         UserRequestDto requestDto = UserRequestDto.builder()
-                .name(Constants.USER_NAME)
-                .surname(Constants.USER_NAME)
-                .birthDate(Constants.LOCAL_DATE_YESTERDAY)
-                .email(Constants.USER_EMAIL)
+                .name(TestConstant.USER_NAME)
+                .surname(TestConstant.USER_NAME)
+                .birthDate(TestConstant.LOCAL_DATE_YESTERDAY)
+                .email(TestConstant.USER_EMAIL)
                 .build();
 
-        mockMvc.perform(put((String.format("%s/%d", URL, Constants.ID)))
+        mockMvc.perform(put((String.format("%s/%d", URL, TestConstant.ID)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpectAll(
                         status().isNotFound(),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("User not found with id")),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("User not found with id")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
 
@@ -269,14 +269,14 @@ class UserControllerTest extends BaseControllerTest {
         testUser = userRepository.save(buildTestUser());
 
         User secondUser = buildTestUser();
-        secondUser.setEmail(Constants.NEW_USER_EMAIL);
+        secondUser.setEmail(TestConstant.NEW_USER_EMAIL);
         userRepository.save(secondUser);
 
         UserRequestDto requestDto = UserRequestDto.builder()
-                .name(Constants.USER_NAME)
-                .surname(Constants.USER_NAME)
-                .birthDate(Constants.LOCAL_DATE_YESTERDAY)
-                .email(Constants.NEW_USER_EMAIL)
+                .name(TestConstant.USER_NAME)
+                .surname(TestConstant.USER_NAME)
+                .birthDate(TestConstant.LOCAL_DATE_YESTERDAY)
+                .email(TestConstant.NEW_USER_EMAIL)
                 .build();
 
         mockMvc.perform(put((String.format("%s/%d", URL, testUser.getId())))
@@ -284,9 +284,9 @@ class UserControllerTest extends BaseControllerTest {
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpectAll(
                         status().isConflict(),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.CONFLICT.value()),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Email already exists in the database")),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.CONFLICT.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Email already exists in the database")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
 
@@ -302,12 +302,12 @@ class UserControllerTest extends BaseControllerTest {
 
     @Test
     void deleteUserWhenUserDoesNotExistIntegrationTest() throws Exception {
-        mockMvc.perform(delete((String.format("%s/%d", URL, Constants.ID))))
+        mockMvc.perform(delete((String.format("%s/%d", URL, TestConstant.ID))))
                 .andExpectAll(
                         status().isNotFound(),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("User not found with id")),
-                        jsonPath(Constants.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("User not found with id")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
 }

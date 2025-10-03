@@ -18,7 +18,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findUsersByIdIn(List<Long> ids);
 
-    @Query("SELECT u FROM User u JOIN FETCH u.cards WHERE u.email = :email")
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.cards WHERE u.email = :email")
     Optional<User> findUserByEmail(@Param(Constant.EMAIL) String email);
 
     boolean existsByEmail(String email);

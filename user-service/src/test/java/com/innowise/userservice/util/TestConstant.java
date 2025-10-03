@@ -3,7 +3,7 @@ package com.innowise.userservice.util;
 import java.time.LocalDate;
 import java.util.List;
 
-public class Constants {
+public class TestConstant {
     public static final Long ID = 1L;
     public static final List<Long> IDS = List.of(ID);
     public static final String USER_NAME = "Test";
@@ -31,6 +31,6 @@ public class Constants {
     public static final String JSON_PATH_EXCEPTION_DETAILS = "$.errorDetails";
     public static final String JSON_PATH_EXCEPTION_TIMESTAMP = "$.timestamp";
 
-    private Constants() {
+    private TestConstant() {
     }
 }
