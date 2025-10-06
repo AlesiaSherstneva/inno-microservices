@@ -3,7 +3,7 @@ package com.innowise.userservice.util;
 import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.service.CardService;
 
-import java.util.Random;
+import java.security.SecureRandom;
 
 /**
  * Utility class for generating card-related data.
@@ -12,7 +12,7 @@ import java.util.Random;
  */
 public class CardFieldsGenerator {
     /** Random number generator for card number creation */
-    private static final Random RANDOM = new Random();
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     /** Pattern for card number generation, produces numbers in XXXX-XXXX-XXXX-XXXX format */
     private static final String CARD_NUMBER_PATTERN = "%04d-%04d-%04d-%04d";
