@@ -14,7 +14,7 @@ jobs:
         run: |
           BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
           
-          if ! echo "$BRANCH_NAME" | grep -Eq '^tasks/[A-Za-z0-9]+$'; then
+          if ! echo "$BRANCH_NAME" | grep -Eq '^tasks/[A-Za-z0-9-]+$'; then
            echo "❌ Invalid branch name: $BRANCH_NAME"
            echo "✅ Use: tasks/task-name"
            exit 1
