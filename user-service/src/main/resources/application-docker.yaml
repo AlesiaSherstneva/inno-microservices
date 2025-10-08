@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://postgres:5432/inno-db
+    url: jdbc:postgresql://user-service-postgres:5432/inno-db
     username: postgres
     password: postgres
   data:
