@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,6 +49,7 @@ public class UserController {
      * @throws ResourceNotFoundException if the user with given ID does not exist
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and #id == authentication.principal)")
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable("id") Long id) {
         UserResponseDto retrievedUser = userService.getUserById(id);
 
@@ -62,6 +64,7 @@ public class UserController {
      * @throws ResourceNotFoundException if the user with given email does not exist
      */
     @GetMapping(params = "email")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponseDto> getUserByEmail(@RequestParam @NotBlank @Email String email) {
         UserResponseDto retrievedUser = userService.getUserByEmail(email);
 
@@ -75,6 +78,7 @@ public class UserController {
      * @return list of users, empty list if no users found by given IDs
      */
     @GetMapping(params = "ids")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponseDto>> getUsersByIds(@RequestParam @NotEmpty List<Long> ids) {
         List<UserResponseDto> retrievedUsers = userService.getUsersByIds(ids);
 
@@ -87,6 +91,7 @@ public class UserController {
      * @return list of all users, empty list if no users exist
      */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponseDto>> getUsers() {
         List<UserResponseDto> retrievedUsers = userService.getAllUsers();
 

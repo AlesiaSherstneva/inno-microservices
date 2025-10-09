@@ -1,13 +1,17 @@
 package com.innowise.securitystarter.jwt;
 
 import com.innowise.securitystarter.config.JwtProperties;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 
 @RequiredArgsConstructor
 public class JwtProvider {
@@ -54,5 +58,23 @@ public class JwtProvider {
         } catch (Exception ex) {
             return false;
         }
+    }
+
+    public Long extractUserId(String token) {
+        return extractClaims(token).get(USER_ID_CLAIM, Long.class);
+    }
+
+    public List<GrantedAuthority> extractAuthorities(String token) {
+        String role = extractClaims(token).get(ROLE_CLAIM, String.class);
+
+        return List.of(new SimpleGrantedAuthority("ROLE_%s".formatted(role)));
+    }
+
+    private Claims extractClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
