@@ -3,12 +3,14 @@ package com.innowise.authservice.service;
 import com.innowise.authservice.client.UserServiceClient;
 import com.innowise.authservice.exception.PhoneNumberAlreadyExistsException;
 import com.innowise.authservice.model.dto.AuthResponseDto;
+import com.innowise.authservice.model.dto.LoginRequestDto;
 import com.innowise.authservice.model.dto.RegisterRequestDto;
 import com.innowise.authservice.model.dto.RegisterResponseDto;
 import com.innowise.authservice.model.entity.UserCredentials;
 import com.innowise.authservice.repository.UserCredentialsRepository;
 import com.innowise.securitystarter.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,12 +39,28 @@ public class AuthService {
 
         UserCredentials savedCredentials = credentialsRepository.save(newCredentials);
 
+        return generateTokens(savedCredentials);
+    }
+
+    @Transactional(readOnly = true)
+    public AuthResponseDto authenticateUser(LoginRequestDto loginRequestDto) {
+        UserCredentials credentials = credentialsRepository.findCredentialsByPhoneNumber(loginRequestDto.getPhoneNumber())
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        if (!passwordEncoder.matches(loginRequestDto.getPassword(), credentials.getPassword())) {
+            throw new BadCredentialsException("Invalid credentials");
+        }
+
+        return generateTokens(credentials);
+    }
+
+    private AuthResponseDto generateTokens(UserCredentials credentials) {
         String accessToken = jwtProvider.generateAccessToken(
-                savedCredentials.getPhoneNumber(),
-                savedCredentials.getUserId(),
-                savedCredentials.getRole().name()
+                credentials.getPhoneNumber(),
+                credentials.getUserId(),
+                credentials.getRole().name()
         );
-        String refreshToken = jwtProvider.generateRefreshToken(savedCredentials.getPhoneNumber());
+        String refreshToken = jwtProvider.generateRefreshToken(credentials.getPhoneNumber());
 
         return new AuthResponseDto(accessToken, refreshToken);
     }
