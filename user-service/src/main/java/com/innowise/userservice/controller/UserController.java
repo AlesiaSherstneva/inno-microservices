@@ -106,6 +106,7 @@ public class UserController {
      * @throws EmailAlreadyExistsException if email is already registered
      */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SERVICE')")
     public ResponseEntity<UserResponseDto> createUser(@RequestBody @Valid UserRequestDto userRequestDto) {
         UserResponseDto createdUser = userService.createUser(userRequestDto);
 
@@ -123,6 +124,7 @@ public class UserController {
      * @throws EmailAlreadyExistsException if new email is already taken by another user
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and #id == authentication.principal)")
     public ResponseEntity<UserResponseDto> updateUser(@PathVariable("id") Long id,
                                                       @RequestBody @Valid UserRequestDto userRequestDto) {
         UserResponseDto updatedUser = userService.updateUser(id, userRequestDto);
@@ -138,6 +140,7 @@ public class UserController {
      * @throws ResourceNotFoundException if the user with given ID does not exist
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and #id == authentication.principal)")
     public ResponseEntity<Void> deleteUser(@PathVariable("id") Long id) {
         userService.deleteUser(id);
 

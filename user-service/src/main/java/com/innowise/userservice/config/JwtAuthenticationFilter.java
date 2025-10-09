@@ -23,11 +23,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
-        if (isPublicEndpoint(request)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         String token = resolveToken(request);
 
         if (token != null && jwtProvider.validateToken(token)) {
@@ -38,11 +33,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    private boolean isPublicEndpoint(HttpServletRequest request) {
-        return "POST".equalsIgnoreCase(request.getMethod()) &&
-                "/api/users".equals(request.getRequestURI());
     }
 
     private String resolveToken(HttpServletRequest request) {
