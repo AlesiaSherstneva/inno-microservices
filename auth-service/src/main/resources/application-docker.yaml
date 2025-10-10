@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://auth-service-postgres:5432/inno-auth-db
+    username: postgres
+    password: postgres

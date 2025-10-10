@@ -58,3 +58,16 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - 8081:8081
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      postgres-2:
+        condition: service_healthy
