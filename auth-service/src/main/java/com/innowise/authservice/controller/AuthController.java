@@ -3,6 +3,8 @@ package com.innowise.authservice.controller;
 import com.innowise.authservice.model.dto.AuthResponseDto;
 import com.innowise.authservice.model.dto.LoginRequestDto;
 import com.innowise.authservice.model.dto.RegisterRequestDto;
+import com.innowise.authservice.model.dto.TokenRequestDto;
+import com.innowise.authservice.model.dto.TokenResponseDto;
 import com.innowise.authservice.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,5 +33,12 @@ public class AuthController {
         AuthResponseDto authResponseDto = authService.authenticateUser(loginRequestDto);
 
         return ResponseEntity.ok(authResponseDto);
+    }
+
+    @PostMapping("/validate")
+    public ResponseEntity<TokenResponseDto> validate(@RequestBody @Valid TokenRequestDto tokenRequestDto) {
+        TokenResponseDto tokenResponseDto = authService.validateToken(tokenRequestDto);
+
+        return ResponseEntity.ok(tokenResponseDto);
     }
 }

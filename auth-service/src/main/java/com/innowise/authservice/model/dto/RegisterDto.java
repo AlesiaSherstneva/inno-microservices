@@ -3,6 +3,6 @@ package com.innowise.authservice.model.dto;
 import lombok.Data;
 
 @Data
-public class RegisterResponseDto {
+public class RegisterDto {
     private Long userId;
 }

@@ -7,8 +7,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.List;
 
 @RestControllerAdvice
 public class GlobalControllerAdvice {
@@ -37,5 +40,32 @@ public class GlobalControllerAdvice {
                 .build();
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponseDto> handleValidationException(MethodArgumentNotValidException ex) {
+        List<String> errorDetails = ex.getBindingResult()
+                .getFieldErrors().stream()
+                .map(error -> String.format("%s: %s", error.getField(), error.getDefaultMessage()))
+                .toList();
+
+        ErrorResponseDto errorResponse = ErrorResponseDto.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .errorMessage("Validation failed")
+                .errorDetails(errorDetails)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDto> handleRuntimeException(Exception ex) {
+        ErrorResponseDto errorResponse = ErrorResponseDto.builder()
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .errorMessage(String.format("Internal server error: %s", ex.getMessage()))
+                .build();
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 }

@@ -5,7 +5,9 @@ import com.innowise.authservice.exception.PhoneNumberAlreadyExistsException;
 import com.innowise.authservice.model.dto.AuthResponseDto;
 import com.innowise.authservice.model.dto.LoginRequestDto;
 import com.innowise.authservice.model.dto.RegisterRequestDto;
-import com.innowise.authservice.model.dto.RegisterResponseDto;
+import com.innowise.authservice.model.dto.RegisterDto;
+import com.innowise.authservice.model.dto.TokenRequestDto;
+import com.innowise.authservice.model.dto.TokenResponseDto;
 import com.innowise.authservice.model.entity.UserCredentials;
 import com.innowise.authservice.repository.UserCredentialsRepository;
 import com.innowise.securitystarter.jwt.JwtProvider;
@@ -29,11 +31,11 @@ public class AuthService {
             throw new PhoneNumberAlreadyExistsException(registerRequestDto.getPhoneNumber());
         }
 
-        RegisterResponseDto registerResponseDto = userServiceClient.createUser(registerRequestDto);
+        RegisterDto registerDto = userServiceClient.createUser(registerRequestDto);
 
         UserCredentials newCredentials = UserCredentials.builder()
                 .phoneNumber(registerRequestDto.getPhoneNumber())
-                .userId(registerResponseDto.getUserId())
+                .userId(registerDto.getUserId())
                 .password(passwordEncoder.encode(registerRequestDto.getPassword()))
                 .build();
 
@@ -54,6 +56,22 @@ public class AuthService {
         return generateTokens(credentials);
     }
 
+    public TokenResponseDto validateToken(TokenRequestDto tokenRequestDto) {
+        String token = tokenRequestDto.getToken();
+
+        try {
+            TokenResponseDto responseDto = new TokenResponseDto();
+
+            responseDto.setValid(jwtProvider.validateToken(token));
+            responseDto.setUserId(jwtProvider.extractUserId(token));
+            responseDto.setRole(jwtProvider.extractRole(token));
+
+            return responseDto;
+        } catch (Exception ex) {
+            return new TokenResponseDto();
+        }
+    }
+
     private AuthResponseDto generateTokens(UserCredentials credentials) {
         String accessToken = jwtProvider.generateAccessToken(
                 credentials.getPhoneNumber(),
@@ -62,6 +80,9 @@ public class AuthService {
         );
         String refreshToken = jwtProvider.generateRefreshToken(credentials.getPhoneNumber());
 
-        return new AuthResponseDto(accessToken, refreshToken);
+        return AuthResponseDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 }

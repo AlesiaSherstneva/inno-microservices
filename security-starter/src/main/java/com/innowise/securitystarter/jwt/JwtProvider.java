@@ -2,6 +2,7 @@ package com.innowise.securitystarter.jwt;
 
 import com.innowise.securitystarter.config.JwtProperties;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,10 @@ public class JwtProvider {
         return extractClaims(token).get(USER_ID_CLAIM, Long.class);
     }
 
+    public String extractRole(String token) {
+        return extractClaims(token).get(ROLE_CLAIM, String.class);
+    }
+
     public List<GrantedAuthority> extractAuthorities(String token) {
         String role = extractClaims(token).get(ROLE_CLAIM, String.class);
 
@@ -71,10 +76,14 @@ public class JwtProvider {
     }
 
     private Claims extractClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            return Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException ex) {
+            return ex.getClaims();
+        }
     }
 }
