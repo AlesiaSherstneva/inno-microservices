@@ -1,6 +1,5 @@
 package com.innowise.userservice.controller;
 
-import com.innowise.userservice.model.dto.CardRequestDto;
 import com.innowise.userservice.model.entity.Card;
 import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.util.TestConstant;
@@ -24,13 +23,16 @@ class CardControllerTest extends BaseControllerTest {
 
     private User testUser;
     private Card testCard;
+    private String testToken;
 
     @Test
     void getCardByIdWhenCardExistsIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
         testCard = cardRepository.save(buildTestCard(testUser));
+        testToken = jwtProvider.generateAccessToken(null, testUser.getId(), TestConstant.ROLE_USER);
 
-        mockMvc.perform(get(String.format("%s/%d", URL, testCard.getId())))
+        mockMvc.perform(get(String.format("%s/%d", URL, testCard.getId()))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_CARD_NUMBER).value(matchesPattern(CARD_NUMBER_PATTERN)),
@@ -42,7 +44,10 @@ class CardControllerTest extends BaseControllerTest {
 
     @Test
     void getCardByIdWhenDoesNotExistIntegrationTest() throws Exception {
-        mockMvc.perform(get(String.format("%s/%d", URL, TestConstant.ID)))
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
+
+        mockMvc.perform(get(String.format("%s/%d", URL, TestConstant.ID))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isNotFound(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
@@ -55,11 +60,13 @@ class CardControllerTest extends BaseControllerTest {
     void getCardsByIdsWhenCardExistsIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
         testCard = cardRepository.save(buildTestCard(testUser));
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
 
         String ids = String.format("%d,%d", testCard.getId(), testCard.getId() + 1);
 
         mockMvc.perform(get(URL)
-                        .param("ids", ids))
+                        .param("ids", ids)
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
@@ -69,8 +76,11 @@ class CardControllerTest extends BaseControllerTest {
 
     @Test
     void getCardsByIdsWhenCardDoesNotExistIntegrationTest() throws Exception {
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
+
         mockMvc.perform(get(URL)
-                        .param("ids", String.valueOf(TestConstant.ID)))
+                        .param("ids", String.valueOf(TestConstant.ID))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
@@ -82,8 +92,10 @@ class CardControllerTest extends BaseControllerTest {
     void getAllCardsWhenCardExistsIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
         testCard = cardRepository.save(buildTestCard(testUser));
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
 
-        mockMvc.perform(get(URL))
+        mockMvc.perform(get(URL)
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
@@ -93,7 +105,10 @@ class CardControllerTest extends BaseControllerTest {
 
     @Test
     void getAllCardsWhenCardDoesNotExistIntegrationTest() throws Exception {
-        mockMvc.perform(get(URL))
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
+
+        mockMvc.perform(get(URL)
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
@@ -104,15 +119,13 @@ class CardControllerTest extends BaseControllerTest {
     @Test
     void createCardSuccessfulIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
-        CardRequestDto requestDto = CardRequestDto.builder()
-                .userId(testUser.getId())
-                .build();
+        testToken = jwtProvider.generateAccessToken(null, testUser.getId(), TestConstant.ROLE_USER);
 
         doNothing().when(cacheEvictor).evictUser(testUser.getId(), testUser.getEmail());
 
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isCreated(),
                         jsonPath(TestConstant.JSON_PATH_CARD_NUMBER).value(matchesPattern(CARD_NUMBER_PATTERN)),
@@ -124,13 +137,11 @@ class CardControllerTest extends BaseControllerTest {
 
     @Test
     void createCardWhenUserDoesNotExistIntegrationTest() throws Exception {
-        CardRequestDto requestDto = CardRequestDto.builder()
-                .userId(TestConstant.ID)
-                .build();
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_USER);
 
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isNotFound(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
@@ -143,16 +154,21 @@ class CardControllerTest extends BaseControllerTest {
     void deleteCardSuccessfulIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
         testCard = cardRepository.save(buildTestCard(testUser));
+        testToken = jwtProvider.generateAccessToken(null, testUser.getId(), TestConstant.ROLE_USER);
 
         doNothing().when(cacheEvictor).evictUser(testUser.getId(), testUser.getEmail());
 
-        mockMvc.perform(delete(String.format("%s/%d", URL, testCard.getId())))
+        mockMvc.perform(delete(String.format("%s/%d", URL, testCard.getId()))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void deleteCardWhenCardDoesNotExistIntegrationTest() throws Exception {
-        mockMvc.perform(delete(String.format("%s/%d", URL, TestConstant.ID)))
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
+
+        mockMvc.perform(delete(String.format("%s/%d", URL, TestConstant.ID))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isNotFound(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),

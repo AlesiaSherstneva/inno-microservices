@@ -1,6 +1,7 @@
 package com.innowise.userservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.innowise.securitystarter.jwt.JwtProvider;
 import com.innowise.userservice.model.entity.Card;
 import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.repository.CardRepository;
@@ -52,6 +53,9 @@ public abstract class BaseControllerTest {
 
     @Autowired
     protected ObjectMapper objectMapper;
+
+    @Autowired
+    protected JwtProvider jwtProvider;
 
     protected static User buildTestUser() {
         return User.builder()

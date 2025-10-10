@@ -43,7 +43,7 @@ public class CardController {
      * @throws ResourceNotFoundException if the card with given ID does not exist
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or @cardService.isCardOwner(#id, authentication.principal)")
     public ResponseEntity<CardResponseDto> getCardById(@PathVariable("id") Long id) {
         CardResponseDto cardResponseDto = cardService.getCardById(id);
 
