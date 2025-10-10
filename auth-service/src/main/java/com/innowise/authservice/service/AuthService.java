@@ -72,13 +72,35 @@ public class AuthService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public AuthResponseDto refreshToken(TokenRequestDto tokenRequestDto) {
+        String refreshToken = tokenRequestDto.getToken();
+
+        if (!jwtProvider.validateToken(refreshToken)) {
+            throw new BadCredentialsException("Invalid refresh token");
+        }
+
+        if (!jwtProvider.isRefreshToken(refreshToken)) {
+            throw new BadCredentialsException("Not a refresh token");
+        }
+
+        Long userId = jwtProvider.extractUserId(refreshToken);
+        UserCredentials credentials = credentialsRepository.findCredentialsByUserId(userId)
+                .orElseThrow(() -> new BadCredentialsException("User not found with id: %d".formatted(userId)));
+
+        return generateTokens(credentials);
+    }
+
     private AuthResponseDto generateTokens(UserCredentials credentials) {
         String accessToken = jwtProvider.generateAccessToken(
                 credentials.getPhoneNumber(),
                 credentials.getUserId(),
                 credentials.getRole().name()
         );
-        String refreshToken = jwtProvider.generateRefreshToken(credentials.getPhoneNumber());
+        String refreshToken = jwtProvider.generateRefreshToken(
+                credentials.getPhoneNumber(),
+                credentials.getUserId()
+        );
 
         return AuthResponseDto.builder()
                 .accessToken(accessToken)

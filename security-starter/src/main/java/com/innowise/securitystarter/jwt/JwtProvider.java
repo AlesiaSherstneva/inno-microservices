@@ -40,9 +40,10 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String generateRefreshToken(String phoneNumber) {
+    public String generateRefreshToken(String phoneNumber, Long userId) {
         return Jwts.builder()
                 .subject(phoneNumber)
+                .claim(USER_ID_CLAIM, userId)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshTokenExpiration()))
                 .signWith(getSigningKey())
@@ -67,6 +68,15 @@ public class JwtProvider {
 
     public String extractRole(String token) {
         return extractClaims(token).get(ROLE_CLAIM, String.class);
+    }
+
+    public boolean isRefreshToken(String token) {
+        try {
+            String role = extractClaims(token).get(ROLE_CLAIM, String.class);
+            return role == null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public List<GrantedAuthority> extractAuthorities(String token) {
