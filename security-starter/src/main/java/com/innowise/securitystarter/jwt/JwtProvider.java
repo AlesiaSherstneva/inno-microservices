@@ -14,6 +14,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Main component for JWT token operations.
+ * Provides methods for token generation, validation and data extraction.
+ */
 @RequiredArgsConstructor
 public class JwtProvider {
     private final JwtProperties jwtProperties;
@@ -22,6 +26,11 @@ public class JwtProvider {
     private static final String USER_ID_CLAIM = "userId";
     private static final String ROLE_CLAIM = "role";
 
+    /**
+     * Lazily initializes and gets the key from configured secret.
+     *
+     * @return SecretKey instance for HMAC-SHA signing
+     */
     private SecretKey getSigningKey() {
         if (secretKey == null) {
             secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
@@ -29,6 +38,14 @@ public class JwtProvider {
         return secretKey;
     }
 
+    /**
+     * Generates a JWT access token with user information and role claims.
+     *
+     * @param phoneNumber the user's phone number (token subject)
+     * @param userId the unique user identifier
+     * @param role the user's role for authorization
+     * @return signed JWT access token
+     */
     public String generateAccessToken(String phoneNumber, Long userId, String role) {
         return Jwts.builder()
                 .subject(phoneNumber)
@@ -40,6 +57,13 @@ public class JwtProvider {
                 .compact();
     }
 
+    /**
+     * Generates a JWT refresh token for obtaining new access tokens.
+     *
+     * @param phoneNumber the user's phone number (token subject)
+     * @param userId the unique user identifier
+     * @return signed JWT refresh token string
+     */
     public String generateRefreshToken(String phoneNumber, Long userId) {
         return Jwts.builder()
                 .subject(phoneNumber)
@@ -50,6 +74,12 @@ public class JwtProvider {
                 .compact();
     }
 
+    /**
+     * Validates JWT token signature and basic structure.
+     *
+     * @param token the JWT token to validate
+     * @return true if token has valid signature and structure, false otherwise
+     */
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
@@ -62,14 +92,32 @@ public class JwtProvider {
         }
     }
 
+    /**
+     * Extracts user ID from JWT token claims.
+     *
+     * @param token the JWT token
+     * @return user identifier from token claims
+     */
     public Long extractUserId(String token) {
         return extractClaims(token).get(USER_ID_CLAIM, Long.class);
     }
 
+    /**
+     * Extracts role from JWT token claims.
+     *
+     * @param token the JWT token
+     * @return user role from token claims, null if not present
+     */
     public String extractRole(String token) {
         return extractClaims(token).get(ROLE_CLAIM, String.class);
     }
 
+    /**
+     * Determines if the given token is a refresh token (by the absence of role claim).
+     *
+     * @param token the JWT token to check
+     * @return true if token is a refresh token, false if access or invalid token
+     */
     public boolean isRefreshToken(String token) {
         try {
             String role = extractClaims(token).get(ROLE_CLAIM, String.class);
@@ -79,6 +127,12 @@ public class JwtProvider {
         }
     }
 
+    /**
+     * Converts JWT token role claim to Spring Security authorities.
+     *
+     * @param token the JWT token
+     * @return list of GrantedAuthority objects with "ROLE_" prefix
+     */
     public List<GrantedAuthority> extractAuthorities(String token) {
         String role = extractClaims(token).get(ROLE_CLAIM, String.class);
 

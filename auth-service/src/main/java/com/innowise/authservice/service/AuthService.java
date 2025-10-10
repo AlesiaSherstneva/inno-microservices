@@ -5,106 +5,61 @@ import com.innowise.authservice.exception.PhoneNumberAlreadyExistsException;
 import com.innowise.authservice.model.dto.AuthResponseDto;
 import com.innowise.authservice.model.dto.LoginRequestDto;
 import com.innowise.authservice.model.dto.RegisterRequestDto;
-import com.innowise.authservice.model.dto.RegisterDto;
 import com.innowise.authservice.model.dto.TokenRequestDto;
 import com.innowise.authservice.model.dto.TokenResponseDto;
 import com.innowise.authservice.model.entity.UserCredentials;
-import com.innowise.authservice.repository.UserCredentialsRepository;
 import com.innowise.securitystarter.jwt.JwtProvider;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-@Service
-@RequiredArgsConstructor
-public class AuthService {
-    private final UserCredentialsRepository credentialsRepository;
-    private final UserServiceClient userServiceClient;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtProvider jwtProvider;
+/**
+ * Service handling authentication and authorization business logic.
+ * Provides user registration, login, token validation and refresh capabilities.
+ *
+ * @see UserCredentials
+ * @see AuthResponseDto
+ * @see RegisterRequestDto
+ * @see LoginRequestDto
+ * @see TokenRequestDto
+ * @see TokenResponseDto
+ * @see UserServiceClient
+ * @see JwtProvider
+ */
+public interface AuthService {
+    /**
+     * Registers a new user in the system.
+     * Creates user profile using UserService and stores authentication credentials.
+     * Returns JWT tokens for immediate access after registration.
+     *
+     * @param registerRequestDto the user registration data
+     * @return authentication response with access and refresh tokens
+     * @throws PhoneNumberAlreadyExistsException if phone number is already registered
+     */
+    AuthResponseDto registerUser(RegisterRequestDto registerRequestDto);
 
-    @Transactional
-    public AuthResponseDto registerUser(RegisterRequestDto registerRequestDto) {
-        if (credentialsRepository.existsByPhoneNumber(registerRequestDto.getPhoneNumber())) {
-            throw new PhoneNumberAlreadyExistsException(registerRequestDto.getPhoneNumber());
-        }
+    /**
+     * Authenticates user with phone number and password.
+     * Verifies credentials and returns JWT tokens.
+     *
+     * @param loginRequestDto the login credentials
+     * @return authentication response with access and refresh tokens
+     * @throws BadCredentialsException if phone number not found or password doesn't match
+     */
+    AuthResponseDto authenticateUser(LoginRequestDto loginRequestDto);
 
-        RegisterDto registerDto = userServiceClient.createUser(registerRequestDto);
+    /**
+     * Validates JWT token and extracts user information.
+     *
+     * @param tokenRequestDto the token validation request containing JWT token
+     * @return token validation response with validity status and user claims
+     */
+    TokenResponseDto validateToken(TokenRequestDto tokenRequestDto);
 
-        UserCredentials newCredentials = UserCredentials.builder()
-                .phoneNumber(registerRequestDto.getPhoneNumber())
-                .userId(registerDto.getUserId())
-                .password(passwordEncoder.encode(registerRequestDto.getPassword()))
-                .build();
-
-        UserCredentials savedCredentials = credentialsRepository.save(newCredentials);
-
-        return generateTokens(savedCredentials);
-    }
-
-    @Transactional(readOnly = true)
-    public AuthResponseDto authenticateUser(LoginRequestDto loginRequestDto) {
-        UserCredentials credentials = credentialsRepository.findCredentialsByPhoneNumber(loginRequestDto.getPhoneNumber())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
-
-        if (!passwordEncoder.matches(loginRequestDto.getPassword(), credentials.getPassword())) {
-            throw new BadCredentialsException("Invalid credentials");
-        }
-
-        return generateTokens(credentials);
-    }
-
-    public TokenResponseDto validateToken(TokenRequestDto tokenRequestDto) {
-        String token = tokenRequestDto.getToken();
-
-        try {
-            TokenResponseDto responseDto = new TokenResponseDto();
-
-            responseDto.setValid(jwtProvider.validateToken(token));
-            responseDto.setUserId(jwtProvider.extractUserId(token));
-            responseDto.setRole(jwtProvider.extractRole(token));
-
-            return responseDto;
-        } catch (Exception ex) {
-            return new TokenResponseDto();
-        }
-    }
-
-    @Transactional(readOnly = true)
-    public AuthResponseDto refreshToken(TokenRequestDto tokenRequestDto) {
-        String refreshToken = tokenRequestDto.getToken();
-
-        if (!jwtProvider.validateToken(refreshToken)) {
-            throw new BadCredentialsException("Invalid refresh token");
-        }
-
-        if (!jwtProvider.isRefreshToken(refreshToken)) {
-            throw new BadCredentialsException("Not a refresh token");
-        }
-
-        Long userId = jwtProvider.extractUserId(refreshToken);
-        UserCredentials credentials = credentialsRepository.findCredentialsByUserId(userId)
-                .orElseThrow(() -> new BadCredentialsException("User not found with id: %d".formatted(userId)));
-
-        return generateTokens(credentials);
-    }
-
-    private AuthResponseDto generateTokens(UserCredentials credentials) {
-        String accessToken = jwtProvider.generateAccessToken(
-                credentials.getPhoneNumber(),
-                credentials.getUserId(),
-                credentials.getRole().name()
-        );
-        String refreshToken = jwtProvider.generateRefreshToken(
-                credentials.getPhoneNumber(),
-                credentials.getUserId()
-        );
-
-        return AuthResponseDto.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
-    }
+    /**
+     * Issues new access and refresh tokens using valid refresh token.
+     *
+     * @param tokenRequestDto the refresh token request
+     * @return new authentication response with fresh tokens
+     * @throws BadCredentialsException if refresh token is invalid, expired, or user not found
+     */
+    AuthResponseDto refreshToken(TokenRequestDto tokenRequestDto);
 }

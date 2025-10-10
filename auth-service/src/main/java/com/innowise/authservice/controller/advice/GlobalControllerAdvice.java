@@ -13,6 +13,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
 
+/**
+ * Global exception handler for AuthenticationService REST controller.
+ * Provides centralized exception handling and standardized error responses
+ * across all authentication endpoints.
+ *
+ * @see ErrorResponseDto
+ * @see PhoneNumberAlreadyExistsException
+ */
 @RestControllerAdvice
 public class GlobalControllerAdvice {
     @ExceptionHandler(FeignException.class)

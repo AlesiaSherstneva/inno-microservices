@@ -48,7 +48,7 @@ public interface CardService {
      * Card number is uniquely generated, expiration date is set to 3 years from now,
      * and holder name is formatted from user's name and surname.
      *
-     * @param userId
+     * @param userId the unique identifier of the user who owns the card
      * @return the created card data with generated fields
      * @throws ResourceNotFoundException if the user with given ID does not exist
      * @see CardFieldsGenerator#generateCardNumber()
@@ -64,5 +64,12 @@ public interface CardService {
      */
     void deleteCard(Long cardId);
 
+    /**
+     * Verifies if a user is the owner of a specific card.
+     *
+     * @param cardId the unique identifier of the card to check
+     * @param userId the unique identifier of the user to verify ownership
+     * @return true if the user owns the card, false otherwise
+     */
     boolean isCardOwner(Long cardId, Long userId);
 }

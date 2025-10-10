@@ -17,6 +17,13 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entity class which represents user authentication credentials.
+ * <p>
+ * This class maps to the "user_credentials" table in the database.
+ * Contains information for credential management.
+ * </p>
+ */
 @Entity
 @Table(name = "user_credentials")
 @Getter
@@ -25,20 +32,28 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserCredentials {
+    /** Primary key representing user's phone number. */
     @Id
     @Column(name = "phone_number")
     private String phoneNumber;
 
+    /**
+     * User identifier linking to User entity in separate UserService database.
+     * Used for cross-service correlation without foreign key constraints.
+     */
     @Column(name = "user_id")
     private Long userId;
 
+    /** BCrypt hashed password for secure authentication. */
     @Column(name = "password")
     private String password;
 
+    /** User role defining access permissions. Automatically defaults to USER if not specified. */
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    /** Timestamp of when the credentials were created. */
     @Column(name = "created_at")
     @CreationTimestamp
     private LocalDateTime createdAt;

@@ -5,6 +5,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Autoconfiguration for JWT security components.
+ *
+ * @see JwtProvider
+ * @see JwtProperties
+ */
 @Configuration
 @EnableConfigurationProperties(JwtProperties.class)
 public class SecurityStarterAutoConfiguration {
