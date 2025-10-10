@@ -50,12 +50,25 @@ class UserControllerTest extends BaseControllerTest {
     @Test
     void getUserByIdWhenUserDoesNotExistIntegrationTest() throws Exception {
         testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
+
         mockMvc.perform(get(String.format("%s/%d", URL, TestConstant.ID))
                         .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isNotFound(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("User not found with id")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                );
+    }
+
+    @Test
+    void getUserByIdWithInvalidTokenIntegrationTest() throws Exception {
+        mockMvc.perform(get(String.format("%s/%d", URL, TestConstant.ID))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted("invalid1234")))
+                .andExpectAll(
+                        status().isUnauthorized(),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.UNAUTHORIZED.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Invalid authentication token")),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
@@ -165,6 +178,20 @@ class UserControllerTest extends BaseControllerTest {
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
                         jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isEmpty()
+                );
+    }
+
+    @Test
+    void getAllUsersWhenAccessDeniedByAuthorityIntegrationTest() throws Exception {
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_USER);
+
+        mockMvc.perform(get(URL)
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
+                .andExpectAll(
+                        status().isForbidden(),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.FORBIDDEN.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Access Denied")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
 
