@@ -1,6 +1,7 @@
 package com.innowise.userservice.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.innowise.securitystarter.jwt.JwtAuthenticationFilter;
 import com.innowise.securitystarter.jwt.JwtProvider;
 import com.innowise.userservice.model.dto.ErrorResponseDto;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,18 +35,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-                .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(this::handleAuthException)
                 )
                 .csrf(AbstractHttpConfigurer::disable);
 
         return http.build();
-    }
-
-    @Bean
-    public JwtAuthenticationFilter jwtFilter() {
-        return new JwtAuthenticationFilter(jwtProvider);
     }
 
     private void handleAuthException(HttpServletRequest request,
