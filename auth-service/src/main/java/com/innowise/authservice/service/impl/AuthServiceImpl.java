@@ -12,6 +12,8 @@ import com.innowise.authservice.model.entity.UserCredentials;
 import com.innowise.authservice.repository.UserCredentialsRepository;
 import com.innowise.authservice.service.AuthService;
 import com.innowise.securitystarter.jwt.JwtProvider;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -62,18 +64,24 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponseDto validateToken(TokenRequestDto tokenRequestDto) {
         String token = tokenRequestDto.getToken();
+        TokenResponseDto responseDto = new TokenResponseDto();
 
         try {
-            TokenResponseDto responseDto = new TokenResponseDto();
-
             responseDto.setValid(jwtProvider.validateToken(token));
-            responseDto.setUserId(jwtProvider.extractUserId(token));
-            responseDto.setRole(jwtProvider.extractRole(token));
-
-            return responseDto;
-        } catch (Exception ex) {
-            return new TokenResponseDto();
+            extractUserAndRole(token, responseDto);
+        } catch (ExpiredJwtException ex) {
+            responseDto.setErrorMessage("Token is expired");
+            extractUserAndRole(token, responseDto);
+        } catch (JwtException ex) {
+            responseDto.setErrorMessage("Invalid token: %s".formatted(ex.getMessage()));
         }
+
+        return responseDto;
+    }
+
+    private void extractUserAndRole(String token, TokenResponseDto responseDto) {
+        responseDto.setUserId(jwtProvider.extractUserId(token));
+        responseDto.setRole(jwtProvider.extractRole(token));
     }
 
     @Override
