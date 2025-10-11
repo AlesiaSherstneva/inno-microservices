@@ -11,6 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -135,6 +136,10 @@ public class JwtProvider {
      */
     public List<GrantedAuthority> extractAuthorities(String token) {
         String role = extractClaims(token).get(ROLE_CLAIM, String.class);
+
+        if (role == null || role.isBlank()) {
+            return Collections.emptyList();
+        }
 
         return List.of(new SimpleGrantedAuthority("ROLE_%s".formatted(role)));
     }
