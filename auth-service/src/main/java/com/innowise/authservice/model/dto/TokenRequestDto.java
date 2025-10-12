@@ -1,6 +1,7 @@
 package com.innowise.authservice.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 import lombok.Data;
 
 /**
@@ -8,6 +9,7 @@ import lombok.Data;
  * Transfers JWT token for validation or refresh operations.
  */
 @Data
+@Builder
 public class TokenRequestDto {
     /** JWT token to validate or refresh. */
     @NotBlank(message = "Token is required")

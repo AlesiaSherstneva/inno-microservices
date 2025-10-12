@@ -1,6 +1,7 @@
 package com.innowise.authservice.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 import lombok.Data;
 
 /**
@@ -8,6 +9,7 @@ import lombok.Data;
  * Transfers authentication credentials from client to server.
  */
 @Data
+@Builder
 public class LoginRequestDto {
     /** User's phone number. */
     @NotBlank(message = "Phone number is required")

@@ -3,6 +3,7 @@ package com.innowise.authservice.model.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
  * Transfers user personal information and credentials for account creation.
  */
 @Data
+@Builder
 public class RegisterRequestDto {
     private String name;
     private String surname;
