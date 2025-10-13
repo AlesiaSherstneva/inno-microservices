@@ -13,6 +13,14 @@ public final class TestConstant {
 
     public static final String WRONG_PASSWORD = "WrongPassword";
 
+    public static final String JSON_PATH_ACCESS_TOKEN = "accessToken";
+    public static final String JSON_PATH_REFRESH_TOKEN = "refreshToken";
+
+    public static final String JSON_PATH_EXCEPTION_STATUS = "$.status";
+    public static final String JSON_PATH_EXCEPTION_ERROR_MESSAGE = "$.errorMessage";
+    public static final String JSON_PATH_EXCEPTION_DETAILS = "$.errorDetails";
+    public static final String JSON_PATH_EXCEPTION_TIMESTAMP = "$.timestamp";
+
     private TestConstant() {
     }
 }
