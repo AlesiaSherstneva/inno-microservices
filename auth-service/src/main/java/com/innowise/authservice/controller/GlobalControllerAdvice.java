@@ -1,4 +1,4 @@
-package com.innowise.authservice.controller.advice;
+package com.innowise.authservice.controller;
 
 import com.innowise.authservice.exception.PhoneNumberAlreadyExistsException;
 import com.innowise.authservice.model.dto.ErrorResponseDto;

@@ -1,7 +1,7 @@
 package com.innowise.authservice.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.innowise.authservice.controller.advice.GlobalControllerAdvice;
+import com.innowise.authservice.controller.GlobalControllerAdvice;
 import lombok.Builder;
 import lombok.Data;
 
