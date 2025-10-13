@@ -14,6 +14,7 @@ import com.innowise.authservice.model.entity.UserCredentials;
 import com.innowise.authservice.repository.UserCredentialsRepository;
 import com.innowise.authservice.service.impl.AuthServiceImpl;
 import com.innowise.authservice.util.DtoBuilder;
+import com.innowise.authservice.util.TokenGenerator;
 import com.innowise.authservice.util.TestConstant;
 import com.innowise.securitystarter.config.JwtProperties;
 import com.innowise.securitystarter.jwt.JwtProvider;
@@ -58,6 +59,9 @@ public class AuthServiceTest {
 
     @Autowired
     private JwtProvider jwtProvider;
+
+    @Autowired
+    private TokenGenerator tokenGenerator;
 
     @Autowired
     private AuthService authService;
@@ -156,7 +160,7 @@ public class AuthServiceTest {
     @Test
     void validateCorrectTokenTest() {
         TokenRequestDto requestDto = TokenRequestDto.builder()
-                .token(generateAccessToken())
+                .token(tokenGenerator.generateAccessToken())
                 .build();
 
         TokenResponseDto responseDto = authService.validateToken(requestDto);
@@ -172,11 +176,11 @@ public class AuthServiceTest {
 
     @Test
     void validateExpiredTokenTest() {
-        JwtProvider spyJwtProvider = Mockito.spy(jwtProvider);
-
         TokenRequestDto requestDto = TokenRequestDto.builder()
-                .token(generateAccessToken())
+                .token(tokenGenerator.generateAccessToken())
                 .build();
+
+        JwtProvider spyJwtProvider = Mockito.spy(jwtProvider);
 
         when(spyJwtProvider.validateToken(requestDto.getToken()))
                 .thenThrow(new ExpiredJwtException(null, null, "Expired"));
@@ -198,7 +202,7 @@ public class AuthServiceTest {
     @Test
     void validateIncorrectTokenTest() {
         TokenRequestDto requestDto = TokenRequestDto.builder()
-                .token(generateAccessToken().toUpperCase())
+                .token(tokenGenerator.generateAccessToken().toUpperCase())
                 .build();
 
         TokenResponseDto responseDto = authService.validateToken(requestDto);
@@ -216,7 +220,7 @@ public class AuthServiceTest {
     @Test
     void refreshTokenSuccessfulTest() {
         TokenRequestDto requestDto = TokenRequestDto.builder()
-                .token(generateRefreshToken())
+                .token(tokenGenerator.generateRefreshToken())
                 .build();
         UserCredentials userCredentials = DtoBuilder.buildUserCredentials();
 
@@ -233,7 +237,7 @@ public class AuthServiceTest {
     @Test
     void refreshTokenWhenTokenIsNotValidTest() {
         TokenRequestDto requestDto = TokenRequestDto.builder()
-                .token(generateRefreshToken().toUpperCase())
+                .token(tokenGenerator.generateRefreshToken().toUpperCase())
                 .build();
 
         assertThatThrownBy(() -> authService.refreshToken(requestDto))
@@ -244,7 +248,7 @@ public class AuthServiceTest {
     @Test
     void refreshTokenWhenTokenIsNotRefreshTest() {
         TokenRequestDto requestDto = TokenRequestDto.builder()
-                .token(generateAccessToken())
+                .token(tokenGenerator.generateAccessToken())
                 .build();
 
         assertThatThrownBy(() -> authService.refreshToken(requestDto))
@@ -255,7 +259,7 @@ public class AuthServiceTest {
     @Test
     void refreshTokenWhenUserNotFoundTest() {
         TokenRequestDto requestDto = TokenRequestDto.builder()
-                .token(generateRefreshToken())
+                .token(tokenGenerator.generateRefreshToken())
                 .build();
 
         when(credentialsRepository.findCredentialsByUserId(TestConstant.ID))
@@ -285,15 +289,5 @@ public class AuthServiceTest {
                 () -> assertThat(jwtProvider.extractUserId(authResponse.getRefreshToken()))
                         .isNotNull().isEqualTo(TestConstant.ID)
         );
-    }
-
-    private String generateAccessToken() {
-        return jwtProvider.generateAccessToken(
-                TestConstant.PHONE_NUMBER, TestConstant.ID, TestConstant.ROLE_USER.name()
-        );
-    }
-
-    private String generateRefreshToken() {
-        return jwtProvider.generateRefreshToken(TestConstant.PHONE_NUMBER, TestConstant.ID);
     }
 }

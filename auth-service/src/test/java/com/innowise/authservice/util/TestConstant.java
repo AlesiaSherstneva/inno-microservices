@@ -21,6 +21,11 @@ public final class TestConstant {
     public static final String JSON_PATH_EXCEPTION_DETAILS = "$.errorDetails";
     public static final String JSON_PATH_EXCEPTION_TIMESTAMP = "$.timestamp";
 
+    public static final String JSON_PATH_VALID = "valid";
+    public static final String JSON_PATH_ERROR_MESSAGE = "errorMessage";
+    public static final String JSON_PATH_USER_ID = "userId";
+    public static final String JSON_PATH_ROLE = "role";
+
     private TestConstant() {
     }
 }

@@ -2,13 +2,17 @@ package com.innowise.authservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.innowise.authservice.client.UserServiceClient;
+import com.innowise.authservice.model.dto.ErrorResponseDto;
+import com.innowise.authservice.model.dto.LoginRequestDto;
 import com.innowise.authservice.model.dto.RegisterDto;
 import com.innowise.authservice.model.dto.RegisterRequestDto;
+import com.innowise.authservice.model.dto.TokenRequestDto;
 import com.innowise.authservice.model.entity.UserCredentials;
 import com.innowise.authservice.repository.UserCredentialsRepository;
 import com.innowise.authservice.util.DtoBuilder;
 import com.innowise.authservice.util.TestConstant;
-import org.junit.jupiter.api.AfterEach;
+import com.innowise.authservice.util.TokenGenerator;
+import feign.FeignException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -25,8 +29,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.LocalDateTime;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -50,12 +57,18 @@ class AuthControllerTest {
 
     private static final String URL_FORMATTED = "/auth/%s";
     private static final String REGISTER = "register";
+    private static final String LOGIN = "login";
+    private static final String VALIDATE = "validate";
+    private static final String REFRESH = "refresh";
 
     @MockitoBean
     private UserServiceClient userServiceClient;
 
     @Autowired
     private UserCredentialsRepository credentialsRepository;
+
+    @Autowired
+    private TokenGenerator tokenGenerator;
 
     @Autowired
     private MockMvc mockMvc;
@@ -80,6 +93,8 @@ class AuthControllerTest {
                         jsonPath(TestConstant.JSON_PATH_REFRESH_TOKEN).exists(),
                         jsonPath(TestConstant.JSON_PATH_REFRESH_TOKEN).isString()
                 );
+
+        credentialsRepository.deleteAll();
     }
 
     @Test
@@ -123,10 +138,190 @@ class AuthControllerTest {
                                 .value(containsString(TestConstant.PHONE_NUMBER)),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
+
+        credentialsRepository.deleteAll();
     }
 
-    @AfterEach
-    void tearDown() {
+    @Test
+    void registerUserWhenUserServiceThrewExceptionIntegrationTest() throws Exception {
+        RegisterRequestDto requestDto = DtoBuilder.buildRegisterRequestDto();
+
+        ErrorResponseDto errorResponse = ErrorResponseDto.builder()
+                .status(409)
+                .errorMessage("Email already exists in the database")
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        FeignException feignException = mock(FeignException.class);
+        when(feignException.status()).thenReturn(409);
+        when(feignException.contentUTF8()).thenReturn(objectMapper.writeValueAsString(errorResponse));
+
+        when(userServiceClient.createUser(requestDto)).thenThrow(feignException);
+
+        mockMvc.perform(post(URL_FORMATTED.formatted(REGISTER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpectAll(
+                        status().isConflict(),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.CONFLICT.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE)
+                                .value(containsString("Email already exists in the database")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                );
+    }
+
+    @Test
+    void loginUserSuccessfulIntegrationTest() throws Exception {
+        UserCredentials existingUser = DtoBuilder.buildUserCredentials();
+        credentialsRepository.save(existingUser);
+
+        LoginRequestDto requestDto = DtoBuilder.buildLoginRequestDto(TestConstant.PASSWORD);
+
+        mockMvc.perform(post(URL_FORMATTED.formatted(LOGIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath(TestConstant.JSON_PATH_ACCESS_TOKEN).exists(),
+                        jsonPath(TestConstant.JSON_PATH_ACCESS_TOKEN).isString(),
+                        jsonPath(TestConstant.JSON_PATH_REFRESH_TOKEN).exists(),
+                        jsonPath(TestConstant.JSON_PATH_REFRESH_TOKEN).isString()
+                );
+
         credentialsRepository.deleteAll();
+    }
+
+    @Test
+    void loginUserWhenPasswordIsWrongIntegrationTest() throws Exception {
+        UserCredentials existingUser = DtoBuilder.buildUserCredentials();
+        credentialsRepository.save(existingUser);
+
+        LoginRequestDto requestDto = DtoBuilder.buildLoginRequestDto(TestConstant.WRONG_PASSWORD);
+
+        mockMvc.perform(post(URL_FORMATTED.formatted(LOGIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpectAll(
+                        status().isUnauthorized(),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.UNAUTHORIZED.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE)
+                                .value(containsString("Invalid credentials")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                );
+
+        credentialsRepository.deleteAll();
+    }
+
+    @Test
+    void loginUserWhenUserDoesNotExistIntegrationTest() throws Exception {
+        LoginRequestDto requestDto = DtoBuilder.buildLoginRequestDto(TestConstant.PASSWORD);
+
+        mockMvc.perform(post(URL_FORMATTED.formatted(LOGIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpectAll(
+                        status().isUnauthorized(),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.UNAUTHORIZED.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE)
+                                .value(containsString("Invalid credentials")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                );
+    }
+
+    @Test
+    void validateTokenSuccessfulIntegrationTest() throws Exception {
+        TokenRequestDto requestDto = TokenRequestDto.builder()
+                .token(tokenGenerator.generateAccessToken())
+                .build();
+
+        mockMvc.perform(post(URL_FORMATTED.formatted(VALIDATE))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath(TestConstant.JSON_PATH_VALID).value(Boolean.TRUE),
+                        jsonPath(TestConstant.JSON_PATH_ERROR_MESSAGE).doesNotExist(),
+                        jsonPath(TestConstant.JSON_PATH_USER_ID).value(TestConstant.ID),
+                        jsonPath(TestConstant.JSON_PATH_ROLE).value(TestConstant.ROLE_USER.name())
+                );
+    }
+
+    @Test
+    void validateInvalidTokenIntegrationTest() throws Exception {
+        TokenRequestDto requestDto = TokenRequestDto.builder()
+                .token(tokenGenerator.generateAccessToken().toUpperCase())
+                .build();
+
+        mockMvc.perform(post(URL_FORMATTED.formatted(VALIDATE))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath(TestConstant.JSON_PATH_VALID).value(Boolean.FALSE),
+                        jsonPath(TestConstant.JSON_PATH_ERROR_MESSAGE).value(containsString("Invalid token")),
+                        jsonPath(TestConstant.JSON_PATH_USER_ID).doesNotExist(),
+                        jsonPath(TestConstant.JSON_PATH_ROLE).doesNotExist()
+                );
+    }
+
+    @Test
+    void refreshTokenSuccessfulIntegrationTest() throws Exception {
+        UserCredentials existingUser = DtoBuilder.buildUserCredentials();
+        credentialsRepository.save(existingUser);
+
+        TokenRequestDto requestDto = TokenRequestDto.builder()
+                .token(tokenGenerator.generateRefreshToken())
+                .build();
+
+        mockMvc.perform(post(URL_FORMATTED.formatted(REFRESH))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath(TestConstant.JSON_PATH_ACCESS_TOKEN).exists(),
+                        jsonPath(TestConstant.JSON_PATH_ACCESS_TOKEN).isString(),
+                        jsonPath(TestConstant.JSON_PATH_REFRESH_TOKEN).exists(),
+                        jsonPath(TestConstant.JSON_PATH_REFRESH_TOKEN).isString()
+                );
+
+        credentialsRepository.deleteAll();
+    }
+
+    @Test
+    void refreshTokenWhenTheTokenIsNotRefreshIntegrationTest() throws Exception {
+        TokenRequestDto requestDto = TokenRequestDto.builder()
+                .token(tokenGenerator.generateAccessToken())
+                .build();
+
+        mockMvc.perform(post(URL_FORMATTED.formatted(REFRESH))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpectAll(
+                        status().isUnauthorized(),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.UNAUTHORIZED.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE)
+                                .value(containsString("Not a refresh token")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                );
+    }
+
+    @Test
+    void refreshTokenWhenUserNotFoundIntegrationTest() throws Exception {
+        TokenRequestDto requestDto = TokenRequestDto.builder()
+                .token(tokenGenerator.generateRefreshToken())
+                .build();
+
+        mockMvc.perform(post(URL_FORMATTED.formatted(REFRESH))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpectAll(
+                        status().isUnauthorized(),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.UNAUTHORIZED.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE)
+                                .value(containsString("User not found")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE)
+                                .value(containsString(String.valueOf(TestConstant.ID))),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                );
     }
 }
