@@ -6,3 +6,8 @@ spring:
       ddl-auto: create-drop
   cache:
     type: none
+
+jwt:
+  secret: testSecretKeyForTestingPurposesOnly
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000

@@ -18,6 +18,9 @@ public class UserResponseDto implements Serializable {
     @Serial
     private static final long serialVersionUID = 1806232929607712539L;
 
+    /** System-generated unique user identifier. */
+    private Long userId;
+
     /** User's first name. */
     private String name;
 

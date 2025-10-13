@@ -25,3 +25,8 @@ spring:
   cache:
     redis:
       time-to-live: 24h
+
+jwt:
+  secret: myVerySecretKeyNotLessThan32CharactersLong
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000

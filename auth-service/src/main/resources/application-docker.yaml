@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://auth-service-postgres:5432/inno-auth-db
+    username: postgres
+    password: postgres
+  cloud:
+    openfeign:
+      client:
+        config:
+          user-service:
+            url: http://user-service:8080/api/v1

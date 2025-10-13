@@ -14,6 +14,12 @@ public class TestConstant {
     public static final String NEW_USER_EMAIL = "new-email@test.test";
     public static final LocalDate NEW_USER_LOCAL_DAY = LOCAL_DATE_YESTERDAY.minusDays(3);
 
+    public static final String AUTHORIZATION = "Authorization";
+    public static final String BEARER_PATTERN = "Bearer %s";
+    public static final String ROLE_USER = "USER";
+    public static final String ROLE_ADMIN = "ADMIN";
+    public static final String ROLE_SERVICE = "SERVICE";
+
     public static final String JSON_PATH_USER_NAME = "$.name";
     public static final String JSON_PATH_USER_SURNAME = "$.surname";
     public static final String JSON_PATH_USER_BIRTH_DATE = "$.birthDate";

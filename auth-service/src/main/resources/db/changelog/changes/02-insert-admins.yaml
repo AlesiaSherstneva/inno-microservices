@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: "02"
+      author: alesia.sharstniova@innowise.com
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO user_credentials VALUES
+              ('+375291111111', -1, '$2a$12$jUasOaaBhzi5W961oyeCVO8vKOYtfAlmA7bo0a4TSDRy5loPGn8zC', 'ADMIN'),
+              ('+375442222222', -2, '$2a$12$69mKQxmjsDI6uRMMaTkikuHzUH2x9XjtUo2LrwWzdiRjkRUuWCdRK', 'ADMIN');

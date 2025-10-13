@@ -22,8 +22,7 @@ jobs:
 
       - name: Build project
         run: |
-          cd ${{ env.SERVICE_DIR }}
-          mvn clean compile -DskipTests
+          mvn clean install -DskipTests
 
   unit-test:
     name: Unit Tests
@@ -39,6 +38,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
+
+      - name: Install dependencies
+        run: |
+          mvn clean install -DskipTests    
 
       - name: Run unit tests
         run: |
@@ -75,6 +78,10 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Install dependencies
+        run: |
+          mvn clean install -DskipTests
+
       - name: Run integration tests
         run: |
           cd ${{ env.SERVICE_DIR }}
@@ -100,6 +107,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
+
+      - name: Install dependencies
+        run: |
+          mvn clean install -DskipTests
 
       - name: Cache SonarQube packages
         uses: actions/cache@v4
@@ -133,6 +144,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
+
+      - name: Install dependencies
+        run: |
+          mvn clean install -DskipTests
 
       - name: Build JAR
         run: |

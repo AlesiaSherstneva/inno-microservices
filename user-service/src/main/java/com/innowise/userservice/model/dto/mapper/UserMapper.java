@@ -18,8 +18,10 @@ import java.util.List;
 public interface UserMapper {
     User toEntity(UserRequestDto userDto);
 
+    @Mapping(source = "id", target = "userId")
     UserResponseDto toResponseDto(User user);
 
+    @Mapping(source = "id", target = "userId")
     List<UserResponseDto> toResponseDtoList(List<User> users);
 
     @Mapping(target = "id", ignore = true)

@@ -25,13 +25,16 @@ class UserControllerTest extends BaseControllerTest {
     private static final String URL = "/users";
 
     private User testUser;
+    private String testToken;
 
     @Test
     void getUserByIdWhenUserExistsIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
         cardRepository.save(buildTestCard(testUser));
+        testToken = jwtProvider.generateAccessToken(null, testUser.getId(), TestConstant.ROLE_USER);
 
-        mockMvc.perform(get(String.format("%s/%d", URL, testUser.getId())))
+        mockMvc.perform(get(String.format("%s/%d", URL, testUser.getId()))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_USER_NAME).value(testUser.getName()),
@@ -46,7 +49,10 @@ class UserControllerTest extends BaseControllerTest {
 
     @Test
     void getUserByIdWhenUserDoesNotExistIntegrationTest() throws Exception {
-        mockMvc.perform(get(String.format("%s/%d", URL, TestConstant.ID)))
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
+
+        mockMvc.perform(get(String.format("%s/%d", URL, TestConstant.ID))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isNotFound(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
@@ -56,11 +62,25 @@ class UserControllerTest extends BaseControllerTest {
     }
 
     @Test
+    void getUserByIdWithInvalidTokenIntegrationTest() throws Exception {
+        mockMvc.perform(get(String.format("%s/%d", URL, TestConstant.ID))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted("invalid1234")))
+                .andExpectAll(
+                        status().isUnauthorized(),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.UNAUTHORIZED.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Invalid authentication token")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
+                );
+    }
+
+    @Test
     void getUserByEmailWhenUserExistsIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
 
         mockMvc.perform(get(URL)
-                        .param("email", testUser.getEmail()))
+                        .param("email", testUser.getEmail())
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_USER_NAME).value(testUser.getName()),
@@ -75,8 +95,11 @@ class UserControllerTest extends BaseControllerTest {
 
     @Test
     void getUserByEmailWhenUserDoesNotExistIntegrationTest() throws Exception {
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
+
         mockMvc.perform(get(URL)
-                        .param("email", TestConstant.USER_EMAIL))
+                        .param("email", TestConstant.USER_EMAIL)
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isNotFound(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
@@ -87,8 +110,11 @@ class UserControllerTest extends BaseControllerTest {
 
     @Test
     void getUserByEmailWhenParameterIsNotValidIntegrationTest() throws Exception {
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
+
         mockMvc.perform(get(URL)
-                        .param("email", ""))
+                        .param("email", "")
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isBadRequest(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.BAD_REQUEST.value()),
@@ -102,9 +128,11 @@ class UserControllerTest extends BaseControllerTest {
     void getUsersByIdsWhenUserExistsIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
         String ids = String.format("%d,%d", testUser.getId(), testUser.getId() + 1);
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
 
         mockMvc.perform(get(URL)
-                        .param("ids", ids))
+                        .param("ids", ids)
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
@@ -114,8 +142,11 @@ class UserControllerTest extends BaseControllerTest {
 
     @Test
     void getUsersByIdsWhenUserDoesNotExistIntegrationTest() throws Exception {
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
+
         mockMvc.perform(get(URL)
-                        .param("ids", String.valueOf(TestConstant.ID)))
+                        .param("ids", String.valueOf(TestConstant.ID))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
@@ -126,8 +157,10 @@ class UserControllerTest extends BaseControllerTest {
     @Test
     void getAllUsersWhenUserExistsIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
 
-        mockMvc.perform(get(URL))
+        mockMvc.perform(get(URL)
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
@@ -137,11 +170,28 @@ class UserControllerTest extends BaseControllerTest {
 
     @Test
     void getAllUsersWhenUserDoesNotExistIntegrationTest() throws Exception {
-        mockMvc.perform(get(URL))
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
+
+        mockMvc.perform(get(URL)
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
                         jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isEmpty()
+                );
+    }
+
+    @Test
+    void getAllUsersWhenAccessDeniedByAuthorityIntegrationTest() throws Exception {
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_USER);
+
+        mockMvc.perform(get(URL)
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
+                .andExpectAll(
+                        status().isForbidden(),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.FORBIDDEN.value()),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value(containsString("Access Denied")),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
 
@@ -153,10 +203,12 @@ class UserControllerTest extends BaseControllerTest {
                 .birthDate(TestConstant.LOCAL_DATE_YESTERDAY)
                 .email(TestConstant.USER_EMAIL)
                 .build();
+        testToken = jwtProvider.generateAccessToken(null, null, TestConstant.ROLE_SERVICE);
 
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(requestDto))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isCreated(),
                         jsonPath(TestConstant.JSON_PATH_USER_NAME).value(requestDto.getName()),
@@ -174,10 +226,12 @@ class UserControllerTest extends BaseControllerTest {
                 .birthDate(LocalDate.now())
                 .email(TestConstant.USER_EMAIL.replace("@", ""))
                 .build();
+        testToken = jwtProvider.generateAccessToken(null, null, TestConstant.ROLE_SERVICE);
 
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(requestDto))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isBadRequest(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.BAD_REQUEST.value()),
@@ -199,12 +253,13 @@ class UserControllerTest extends BaseControllerTest {
                 .birthDate(TestConstant.LOCAL_DATE_YESTERDAY)
                 .email(TestConstant.USER_EMAIL)
                 .build();
-
         testUser = userRepository.save(buildTestUser());
+        testToken = jwtProvider.generateAccessToken(null, null, TestConstant.ROLE_SERVICE);
 
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(requestDto))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isConflict(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.CONFLICT.value()),
@@ -217,6 +272,7 @@ class UserControllerTest extends BaseControllerTest {
     void updateUserSuccessfulIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
         cardRepository.save(buildTestCard(testUser));
+        testToken = jwtProvider.generateAccessToken(null, testUser.getId(), TestConstant.ROLE_USER);
 
         UserRequestDto requestDto = UserRequestDto.builder()
                 .name(TestConstant.USER_NAME)
@@ -229,7 +285,8 @@ class UserControllerTest extends BaseControllerTest {
 
         mockMvc.perform(put((String.format("%s/%d", URL, testUser.getId())))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(requestDto))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_USER_NAME).value(TestConstant.USER_NAME),
@@ -252,10 +309,12 @@ class UserControllerTest extends BaseControllerTest {
                 .birthDate(TestConstant.LOCAL_DATE_YESTERDAY)
                 .email(TestConstant.USER_EMAIL)
                 .build();
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_USER);
 
         mockMvc.perform(put((String.format("%s/%d", URL, TestConstant.ID)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(requestDto))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isNotFound(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),
@@ -267,6 +326,7 @@ class UserControllerTest extends BaseControllerTest {
     @Test
     void updateUserWhenEmailAlreadyExistsIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
+        testToken = jwtProvider.generateAccessToken(null, testUser.getId(), TestConstant.ROLE_USER);
 
         User secondUser = buildTestUser();
         secondUser.setEmail(TestConstant.NEW_USER_EMAIL);
@@ -281,7 +341,8 @@ class UserControllerTest extends BaseControllerTest {
 
         mockMvc.perform(put((String.format("%s/%d", URL, testUser.getId())))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(requestDto))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isConflict(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.CONFLICT.value()),
@@ -293,16 +354,21 @@ class UserControllerTest extends BaseControllerTest {
     @Test
     void deleteUserSuccessfulIntegrationTest() throws Exception {
         testUser = userRepository.save(buildTestUser());
+        testToken = jwtProvider.generateAccessToken(null, testUser.getId(), TestConstant.ROLE_USER);
 
         doNothing().when(cacheEvictor).evictUser(testUser.getId(), testUser.getEmail());
 
-        mockMvc.perform(delete((String.format("%s/%d", URL, testUser.getId()))))
+        mockMvc.perform(delete((String.format("%s/%d", URL, testUser.getId())))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void deleteUserWhenUserDoesNotExistIntegrationTest() throws Exception {
-        mockMvc.perform(delete((String.format("%s/%d", URL, TestConstant.ID))))
+        testToken = jwtProvider.generateAccessToken(null, TestConstant.ID, TestConstant.ROLE_ADMIN);
+
+        mockMvc.perform(delete((String.format("%s/%d", URL, TestConstant.ID)))
+                        .header(TestConstant.AUTHORIZATION, TestConstant.BEARER_PATTERN.formatted(testToken)))
                 .andExpectAll(
                         status().isNotFound(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.NOT_FOUND.value()),

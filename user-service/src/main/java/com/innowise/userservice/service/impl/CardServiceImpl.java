@@ -1,7 +1,6 @@
 package com.innowise.userservice.service.impl;
 
 import com.innowise.userservice.exception.ResourceNotFoundException;
-import com.innowise.userservice.model.dto.CardRequestDto;
 import com.innowise.userservice.model.dto.CardResponseDto;
 import com.innowise.userservice.model.dto.mapper.CardMapper;
 import com.innowise.userservice.model.entity.Card;
@@ -17,8 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
-@Service
+@Service("cardService")
 @RequiredArgsConstructor
 public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
@@ -53,9 +53,9 @@ public class CardServiceImpl implements CardService {
 
     @Override
     @Transactional
-    public CardResponseDto createCard(CardRequestDto cardRequestDto) {
-        User userToAddCard = userRepository.findUserById(cardRequestDto.getUserId())
-                .orElseThrow(() -> ResourceNotFoundException.userNotFound(cardRequestDto.getUserId()));
+    public CardResponseDto createCard(Long userId) {
+        User userToAddCard = userRepository.findUserById(userId)
+                .orElseThrow(() -> ResourceNotFoundException.userNotFound(userId));
 
         String newCardNumber;
         do {
@@ -85,5 +85,15 @@ public class CardServiceImpl implements CardService {
         cacheEvictor.evictUser(cardToDelete.getUser().getId(), cardToDelete.getUser().getEmail());
 
         cardRepository.deleteCardById(cardId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isCardOwner(Long cardId, Long userId) {
+        Optional<Card> cardInDb = cardRepository.findCardById(cardId);
+        Optional<User> userInDb = userRepository.findUserById(userId);
+
+        return cardInDb.isPresent() && userInDb.isPresent()
+                && cardInDb.get().getUser().getId().equals(userInDb.get().getId());
     }
 }

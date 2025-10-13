@@ -1,7 +1,6 @@
 package com.innowise.userservice.service;
 
 import com.innowise.userservice.exception.ResourceNotFoundException;
-import com.innowise.userservice.model.dto.CardRequestDto;
 import com.innowise.userservice.model.dto.CardResponseDto;
 import com.innowise.userservice.model.entity.Card;
 import com.innowise.userservice.model.entity.User;
@@ -126,16 +125,12 @@ class CardServiceTest extends BaseServiceTest {
 
     @Test
     void createCardWhenUserExistsTest() {
-        CardRequestDto requestDto = CardRequestDto.builder()
-                .userId(TestConstant.ID)
-                .build();
-
         when(userRepository.findUserById(TestConstant.ID)).thenReturn(Optional.of(testUser));
         when(cardRepository.existsByNumber(anyString())).thenReturn(false);
         when(cardRepository.save(any(Card.class))).thenReturn(testCard);
         doNothing().when(cacheEvictor).evictUser(TestConstant.ID, TestConstant.USER_EMAIL);
 
-        CardResponseDto resultDto = cardService.createCard(requestDto);
+        CardResponseDto resultDto = cardService.createCard(TestConstant.ID);
 
         assertCardResponseDtoFields(resultDto);
 
@@ -147,13 +142,9 @@ class CardServiceTest extends BaseServiceTest {
 
     @Test
     void createCardWhenUserDoesNotExistTest() {
-        CardRequestDto requestDto = CardRequestDto.builder()
-                .userId(TestConstant.ID)
-                .build();
-
         when(userRepository.findUserById(TestConstant.ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> cardService.createCard(requestDto))
+        assertThatThrownBy(() -> cardService.createCard(TestConstant.ID))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found")
                 .hasMessageContaining(String.valueOf(TestConstant.ID));
