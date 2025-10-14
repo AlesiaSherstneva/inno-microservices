@@ -6,3 +6,20 @@ server:
 spring:
   application:
     name: order-service
+  datasource:
+    url: jdbc:postgresql://localhost:5435/inno-orders-db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  liquibase:
+    enabled: true
+    change-log: db/changelog/db.changelog-master.yaml
+
+jwt:
+  secret: myVerySecretKeyNotLessThan32CharactersLong
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000

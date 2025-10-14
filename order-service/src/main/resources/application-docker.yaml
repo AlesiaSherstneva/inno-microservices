@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://order-service-postgres:5432/inno-orders-db
+    username: postgres
+    password: postgres
