@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: "04-1"
+      author: alesia.sharstniova@innowise.com
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO items (name, price) VALUES
+              ('iPhone 15 Pro', 1199.99),
+              ('Samsung Galaxy S24 Ultra', 1299.99),
+              ('MacBook Pro 16', 2499.99),
+              ('iPad Air 5', 749.99),
+              ('AirPods Pro 2', 249.99),
+              ('Xbox Series X', 499.99),
+              ('PlayStation 5', 499.99),
+              ('Nintendo Switch OLED', 349.99),
+              ('Apple Watch Series 9', 399.99),
+              ('Google Pixel 8 Pro', 999.99)
