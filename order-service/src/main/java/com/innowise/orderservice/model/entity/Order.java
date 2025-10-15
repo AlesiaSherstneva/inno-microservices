@@ -9,6 +9,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.NamedAttributeNode;
+import jakarta.persistence.NamedEntityGraph;
+import jakarta.persistence.NamedSubgraph;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
@@ -25,6 +28,20 @@ import java.util.List;
 
 @Entity
 @Table(name = "orders")
+@NamedEntityGraph(
+        name = "Order.withItems",
+        attributeNodes = {
+                @NamedAttributeNode(value = "orderItems", subgraph = "orderItems")
+        },
+        subgraphs = {
+                @NamedSubgraph(
+                        name = "orderItems",
+                        attributeNodes = {
+                                @NamedAttributeNode("item")
+                        }
+                )
+        }
+)
 @Getter
 @Setter
 @Builder
