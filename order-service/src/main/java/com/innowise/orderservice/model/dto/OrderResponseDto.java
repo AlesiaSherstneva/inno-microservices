@@ -1,5 +1,6 @@
 package com.innowise.orderservice.model.dto;
 
+import com.innowise.orderservice.model.entity.enums.OrderStatus;
 import lombok.Builder;
 import lombok.Data;
 
@@ -10,6 +11,7 @@ import java.util.List;
 @Builder
 public class OrderResponseDto {
     private Long userId;
+    private OrderStatus status;
     private List<OrderItemResponseDto> items;
     private BigDecimal totalPrice;
 }

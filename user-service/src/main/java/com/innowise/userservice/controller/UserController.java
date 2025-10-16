@@ -52,7 +52,7 @@ public class UserController {
      * @throws AccessDeniedException if user does not have permission to access the resource
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and #id == authentication.principal)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE') or (hasRole('USER') and #id == authentication.principal)")
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable("id") Long id) {
         UserResponseDto retrievedUser = userService.getUserById(id);
 
