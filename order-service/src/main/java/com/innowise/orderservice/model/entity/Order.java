@@ -64,12 +64,21 @@ public class Order {
     private LocalDateTime creationDate;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> orderItems = new ArrayList<>();
+    private List<OrderItem> orderItems;
 
     @PrePersist
     public void setDefaultStatus() {
         if (status == null) {
             status = OrderStatus.NEW;
         }
+    }
+
+    public void addOrderItem(OrderItem orderItem) {
+        if (this.orderItems == null) {
+            this.orderItems = new ArrayList<>();
+        }
+
+        this.orderItems.add(orderItem);
+        orderItem.setOrder(this);
     }
 }
