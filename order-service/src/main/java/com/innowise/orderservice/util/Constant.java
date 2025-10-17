@@ -1,0 +1,8 @@
+package com.innowise.orderservice.util;
+
+public final class Constant {
+    public static final String ROLE_SERVICE = "SERVICE";
+
+    private Constant() {
+    }
+}

@@ -5,6 +5,7 @@ import com.innowise.orderservice.model.dto.OrderResponseDto;
 import com.innowise.orderservice.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,6 +26,6 @@ public class OrderController {
                                                         @AuthenticationPrincipal Long userId) {
         OrderResponseDto createdOrder = orderService.createOrder(userId, requestDto);
 
-        return ResponseEntity.ok(createdOrder);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
     }
 }
