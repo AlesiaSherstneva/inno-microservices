@@ -9,6 +9,7 @@ import com.innowise.orderservice.model.dto.OrderResponseDto;
 import com.innowise.orderservice.model.dto.mapper.OrderMapper;
 import com.innowise.orderservice.model.entity.Order;
 import com.innowise.orderservice.model.entity.OrderItem;
+import com.innowise.orderservice.model.entity.enums.OrderStatus;
 import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
 import com.innowise.orderservice.util.Constant;
@@ -18,6 +19,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +44,30 @@ public class OrderService {
         }
 
         return orderMapper.toDto(retrievedOrder, getCustomerInfoOrFallback(userId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponseDto> getOrdersByIds(List<Long> orderIds) {
+        List<Order> retrievedOrders = orderRepository.findOrdersByIdIn(orderIds);
+
+        List<Long> userIds = retrievedOrders.stream()
+                .map(Order::getUserId)
+                .distinct()
+                .toList();
+
+        return orderMapper.toResponseDtoList(retrievedOrders, getCustomersInfoOrFallbackMap(userIds));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponseDto> getOrdersByStatuses(List<OrderStatus> statuses) {
+        List<Order> retrievedOrders = orderRepository.findOrdersByStatusIn(statuses);
+
+        List<Long> userIds = retrievedOrders.stream()
+                .map(Order::getUserId)
+                .distinct()
+                .toList();
+
+        return orderMapper.toResponseDtoList(retrievedOrders, getCustomersInfoOrFallbackMap(userIds));
     }
 
     @Transactional
@@ -70,9 +101,28 @@ public class OrderService {
         try {
             return userServiceClient.getUserById(userId);
         } catch (FeignException ex) {
-            return CustomerDto.builder()
-                    .errorMessage("User information temporary unavailable")
-                    .build();
+            return buildUnavailableCustomer();
         }
+    }
+
+    private Map<Long, CustomerDto> getCustomersInfoOrFallbackMap(List<Long> userIds) {
+        if (userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        try {
+            List<CustomerDto> customers = userServiceClient.getUsersByIds(userIds);
+            return customers.stream()
+                    .collect(Collectors.toMap(CustomerDto::getUserId, Function.identity()));
+        } catch (FeignException ex) {
+            return userIds.stream()
+                    .collect(Collectors.toMap(Function.identity(), userId -> buildUnavailableCustomer()));
+        }
+    }
+
+    private CustomerDto buildUnavailableCustomer() {
+        return CustomerDto.builder()
+                .errorMessage("User information temporary unavailable")
+                .build();
     }
 }

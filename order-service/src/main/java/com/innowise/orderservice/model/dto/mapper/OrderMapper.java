@@ -8,6 +8,10 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring",
         uses = OrderItemMapper.class)
@@ -17,6 +21,16 @@ public interface OrderMapper {
     @Mapping(target = "items", source = "order.orderItems")
     @Mapping(target = "totalPrice", expression = "java(calculateTotalPrice(order))")
     OrderResponseDto toDto(Order order, CustomerDto customer);
+
+    default List<OrderResponseDto> toResponseDtoList(List<Order> orders, Map<Long, CustomerDto> customerMap) {
+        if (orders.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return orders.stream()
+                .map(order -> toDto(order, customerMap.get(order.getUserId())))
+                .collect(Collectors.toList());
+    }
 
     default BigDecimal calculateTotalPrice(Order order) {
         if (order.getOrderItems() == null) {

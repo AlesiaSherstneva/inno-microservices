@@ -83,7 +83,7 @@ public class UserController {
      * @throws AccessDeniedException if user does not have ADMIN role
      */
     @GetMapping(params = "ids")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
     public ResponseEntity<List<UserResponseDto>> getUsersByIds(@RequestParam @NotEmpty List<Long> ids) {
         List<UserResponseDto> retrievedUsers = userService.getUsersByIds(ids);
 
