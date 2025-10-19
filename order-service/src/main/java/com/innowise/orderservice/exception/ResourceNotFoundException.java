@@ -11,10 +11,10 @@ public class ResourceNotFoundException extends RuntimeException {
     }
 
     public static ResourceNotFoundException orderNotFound(Long id) {
-        return new ResourceNotFoundException("Order not found with id: " + id);
+        return new ResourceNotFoundException("Order not found with id: %d".formatted(id));
     }
 
     public static ResourceNotFoundException itemNotFound(Integer id) {
-        return new ResourceNotFoundException("Item not found with id: " + id);
+        return new ResourceNotFoundException("Item not found with id: %d".formatted(id));
     }
 }

@@ -12,9 +12,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,6 +32,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<OrderResponseDto> getOrderById(@PathVariable("id") Long id,
                                                          @AuthenticationPrincipal Long userId) {
         OrderResponseDto retrievedOrder = orderService.getOrderById(id, userId);
@@ -60,5 +63,24 @@ public class OrderController {
         OrderResponseDto createdOrder = orderService.createOrder(userId, requestDto);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<OrderResponseDto> updateOrder(@PathVariable("id") Long id,
+                                                        @RequestBody @Valid OrderRequestDto requestDto,
+                                                        @AuthenticationPrincipal Long userId) {
+        OrderResponseDto updatedOrder = orderService.updateOrder(id, requestDto, userId);
+
+        return ResponseEntity.ok(updatedOrder);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<Void> deleteOrder(@PathVariable("id") Long id,
+                                            @AuthenticationPrincipal Long userId) {
+        orderService.cancelOrDeleteOrder(id, userId);
+
+        return ResponseEntity.noContent().build();
     }
 }

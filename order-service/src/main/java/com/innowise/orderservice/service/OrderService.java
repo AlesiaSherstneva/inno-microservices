@@ -1,6 +1,7 @@
 package com.innowise.orderservice.service;
 
 import com.innowise.orderservice.client.UserServiceClient;
+import com.innowise.orderservice.exception.OrderStatusException;
 import com.innowise.orderservice.exception.ResourceNotFoundException;
 import com.innowise.orderservice.model.dto.CustomerDto;
 import com.innowise.orderservice.model.dto.OrderItemRequestDto;
@@ -83,6 +84,47 @@ public class OrderService {
         return orderMapper.toDto(createdOrder, getCustomerInfoOrFallback(userId));
     }
 
+    @Transactional
+    public OrderResponseDto updateOrder(Long orderId, OrderRequestDto orderRequestDto, Long userId) {
+        Order orderToUpdate = orderRepository.findOrderById(orderId)
+                .orElseThrow(() -> ResourceNotFoundException.orderNotFound(orderId));
+
+        if (!orderToUpdate.getUserId().equals(userId) && !isUserAdmin()) {
+            throw new AccessDeniedException("You don't have permission to access this order");
+        }
+
+        orderToUpdate.getOrderItems().clear();
+        orderRequestDto.getItems().stream()
+                .map(this::convertToOrderItem)
+                .forEach(orderToUpdate::addOrderItem);
+
+        Order updatedOrder = orderRepository.save(orderToUpdate);
+
+        return orderMapper.toDto(updatedOrder, getCustomerInfoOrFallback(userId));
+    }
+
+    @Transactional
+    public void cancelOrDeleteOrder(Long orderId, Long userId) {
+        Order orderToDelete = orderRepository.findOrderById(orderId)
+                .orElseThrow(() -> ResourceNotFoundException.orderNotFound(orderId));
+
+        if (!orderToDelete.getUserId().equals(userId) && !isUserAdmin()) {
+            throw new AccessDeniedException("You don't have permission to access this order");
+        }
+
+        if (isUserAdmin()) {
+            orderRepository.deleteOrderAsAdmin(orderId);
+        } else {
+            if (orderToDelete.getStatus().equals(OrderStatus.CANCELLED)) {
+                throw OrderStatusException.orderIsAlreadyCancelled(orderId);
+            }
+            if (orderToDelete.getStatus().equals(OrderStatus.COMPLETED)) {
+                throw OrderStatusException.orderIsCompleted(orderId);
+            }
+            orderRepository.cancelOrderAsUser(orderId);
+        }
+    }
+
     private boolean isUserAdmin() {
         return SecurityContextHolder.getContext().getAuthentication()
                 .getAuthorities().stream()
@@ -101,7 +143,9 @@ public class OrderService {
         try {
             return userServiceClient.getUserById(userId);
         } catch (FeignException ex) {
-            return buildUnavailableCustomer();
+            return CustomerDto.builder()
+                    .errorMessage("User information temporary unavailable")
+                    .build();
         }
     }
 
@@ -115,14 +159,12 @@ public class OrderService {
             return customers.stream()
                     .collect(Collectors.toMap(CustomerDto::getUserId, Function.identity()));
         } catch (FeignException ex) {
-            return userIds.stream()
-                    .collect(Collectors.toMap(Function.identity(), userId -> buildUnavailableCustomer()));
-        }
-    }
+            CustomerDto unavailableCustomer = CustomerDto.builder()
+                    .errorMessage("User information temporary unavailable")
+                    .build();
 
-    private CustomerDto buildUnavailableCustomer() {
-        return CustomerDto.builder()
-                .errorMessage("User information temporary unavailable")
-                .build();
+            return userIds.stream()
+                    .collect(Collectors.toMap(Function.identity(), userId -> unavailableCustomer));
+        }
     }
 }
