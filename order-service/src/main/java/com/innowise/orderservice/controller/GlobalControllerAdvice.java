@@ -13,6 +13,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
 
+/**
+ * Global exception handler for OrderService REST controller.
+ * Provides centralized exception handling and standardized error responses
+ * across all order-related endpoints.
+ *
+ * @see ErrorResponseDto
+ * @see ResourceNotFoundException
+ * @see OrderStatusException
+ */
 @RestControllerAdvice
 public class GlobalControllerAdvice {
     @ExceptionHandler(ResourceNotFoundException.class)

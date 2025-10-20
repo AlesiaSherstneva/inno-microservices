@@ -17,10 +17,14 @@ import java.util.List;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponseDto {
-    /** HTTP status code of the error response. */
+    /**
+     * HTTP status code of the error response.
+     */
     private int status;
 
-    /** Human-readable error message describing the issue. */
+    /**
+     * Human-readable error message describing the issue.
+     */
     private String errorMessage;
 
     /**
@@ -29,7 +33,9 @@ public class ErrorResponseDto {
      */
     private List<String> errorDetails;
 
-    /** Timestamp when the error occurred. Automatically set to current time. */
+    /**
+     * Timestamp when the error occurred. Automatically set to current time.
+     */
     @Builder.Default
     private LocalDateTime timestamp = LocalDateTime.now();
 }
