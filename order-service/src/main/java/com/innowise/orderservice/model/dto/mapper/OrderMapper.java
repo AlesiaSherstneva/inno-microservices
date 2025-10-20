@@ -6,6 +6,7 @@ import com.innowise.orderservice.model.dto.OrderResponseDto;
 import com.innowise.orderservice.model.entity.Order;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -14,7 +15,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring",
-        uses = OrderItemMapper.class)
+        uses = OrderItemMapper.class,
+        unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface OrderMapper {
     Order toEntity(Long userId, OrderRequestDto requestDto);
 

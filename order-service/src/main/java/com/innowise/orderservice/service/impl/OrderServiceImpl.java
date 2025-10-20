@@ -95,7 +95,7 @@ public class OrderServiceImpl implements OrderService {
         Order orderToUpdate = orderRepository.findOrderById(orderId)
                 .orElseThrow(() -> ResourceNotFoundException.orderNotFound(orderId));
 
-        if (!orderToUpdate.getUserId().equals(userId) && !isUserAdmin()) {
+        if (!orderToUpdate.getUserId().equals(userId)) {
             throw new AccessDeniedException("You don't have permission to access this order");
         }
 
