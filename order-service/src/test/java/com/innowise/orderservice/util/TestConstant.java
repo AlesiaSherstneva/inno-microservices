@@ -1,5 +1,6 @@
 package com.innowise.orderservice.util;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -11,27 +12,29 @@ public class TestConstant {
     public static final String USER_NAME = "Test";
     public static final String USER_EMAIL = "test@test.test";
     public static final String ITEM_NAME = "Test product";
+    public static final BigDecimal ITEM_PRICE = BigDecimal.valueOf(99.99);
     public static final Integer ITEM_QUANTITY = 3;
 
-    public static final String NEW_USER_SURNAME = "New-Surname";
-    public static final String NEW_USER_EMAIL = "new-email@test.test";
-    public static final LocalDateTime NEW_USER_LOCAL_DAY = LOCAL_DATE_TIME_NOW.minusDays(3);
+    public static final String NEW_ITEM_NAME = "New Product";
+    public static final BigDecimal NEW_ITEM_PRICE = BigDecimal.valueOf(33.33);
 
-    public static final String AUTHORIZATION = "Authorization";
-    public static final String BEARER_PATTERN = "Bearer %s";
-    public static final String ROLE_USER = "USER";
-    public static final String ROLE_ADMIN = "ADMIN";
-    public static final String ROLE_SERVICE = "SERVICE";
+    public static final String ROLE_USER_WITH_PREFIX = "ROLE_USER";
+    public static final String ROLE_USER_WITHOUT_PREFIX = "USER";
+    public static final String ROLE_ADMIN_WITH_PREFIX = "ROLE_ADMIN";
+    public static final String ROLE_ADMIN_WITHOUT_PREFIX = "ADMIN";
 
-    public static final String JSON_PATH_USER_NAME = "$.name";
-    public static final String JSON_PATH_USER_SURNAME = "$.surname";
-    public static final String JSON_PATH_USER_BIRTH_DATE = "$.birthDate";
-    public static final String JSON_PATH_USER_EMAIL = "$.email";
-    public static final String JSON_PATH_USER_CARDS = "$.cards";
+    public static final String JSON_PATH_CUSTOMER = "$.customer";
+    public static final String JSON_PATH_CUSTOMER_NAME = "$.customer.name";
+    public static final String JSON_PATH_CUSTOMER_SURNAME = "$.customer.surname";
+    public static final String JSON_PATH_CUSTOMER_EMAIL = "$.customer.email";
 
-    public static final String JSON_PATH_CARD_NUMBER = "$.number";
-    public static final String JSON_PATH_CARD_HOLDER = "$.holder";
-    public static final String JSON_PATH_CARD_EXPIRATION_DATE = "$.expirationDate";
+    public static final String JSON_PATH_ITEMS = "$.items";
+    public static final String JSON_PATH_ITEM_NAME = "$.items[0].name";
+    public static final String JSON_PATH_ITEM_PRICE = "$.items[0].price";
+    public static final String JSON_PATH_ITEM_QUANTITY = "$.items[0].quantity";
+
+    public static final String JSON_PATH_TOTAL_PRICE = "$.totalPrice";
+    public static final String JSON_PATH_STATUS = "$.status";
 
     public static final String JSON_PATH_COMMON_ARRAY = "$";
 

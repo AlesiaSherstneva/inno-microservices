@@ -46,7 +46,7 @@ public class OrderServiceImpl implements OrderService {
             throw new AccessDeniedException("You don't have permission to access this order");
         }
 
-        return orderMapper.toDto(retrievedOrder, getCustomerInfoOrFallback(userId));
+        return orderMapper.toDto(retrievedOrder, getCustomerInfoOrFallback(retrievedOrder.getUserId()));
     }
 
     @Override
@@ -120,7 +120,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         if (isUserAdmin()) {
-            orderRepository.deleteOrderAsAdmin(orderId);
+            orderRepository.delete(orderToDelete);
         } else {
             if (orderToDelete.getStatus().equals(OrderStatus.CANCELLED)) {
                 throw OrderStatusException.orderIsAlreadyCancelled(orderId);

@@ -95,6 +95,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>com.innowise</groupId>
             <artifactId>security-starter</artifactId>
         </dependency>

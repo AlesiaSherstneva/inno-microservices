@@ -27,8 +27,4 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Modifying
     @Query("UPDATE Order o SET o.status = 'CANCELLED' WHERE o.id = :id")
     void cancelOrderAsUser(@Param(Constant.ID) Long id);
-
-    @Modifying
-    @Query("DELETE FROM Order o WHERE o.id = :id")
-    void deleteOrderAsAdmin(@Param(Constant.ID) Long id);
 }
