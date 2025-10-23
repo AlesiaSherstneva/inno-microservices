@@ -1,4 +1,8 @@
 spring:
+  config:
+    activate:
+      on-profile: docker
+    import: configserver:http://config-server:8888
   datasource:
     url: jdbc:postgresql://user-service-postgres:5432/inno-users-db
     username: postgres

@@ -1,0 +1,8 @@
+server:
+  servlet:
+    context-path: /api/v1
+
+jwt:
+  secret: myVerySecretKeyNotLessThan32CharactersLong
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000
