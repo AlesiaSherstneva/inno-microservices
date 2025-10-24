@@ -17,5 +17,10 @@ databaseChangeLog:
       author: alesia.sharstniova@innowise.com
       changes:
         - sql:
-            sql: |
-              CREATE INDEX idx_orders_status ON orders(status)
+            sql: CREATE INDEX idx_orders_status ON orders(status)
+  - changeSet:
+      id: "01-3"
+      author: alesia.sharstniova@innowise.com
+      changes:
+        - sql:
+            sql: CREATE INDEX idx_orders_user_id ON orders(user_id)
