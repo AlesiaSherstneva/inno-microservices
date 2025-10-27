@@ -27,6 +27,7 @@ public class TestConstant {
     public static final String JSON_PATH_CUSTOMER_NAME = "$.customer.name";
     public static final String JSON_PATH_CUSTOMER_SURNAME = "$.customer.surname";
     public static final String JSON_PATH_CUSTOMER_EMAIL = "$.customer.email";
+    public static final String JSON_PATH_CUSTOMER_ERROR_MESSAGE = "$.customer.errorMessage";
 
     public static final String JSON_PATH_ITEMS = "$.items";
     public static final String JSON_PATH_ITEM_NAME = "$.items[0].name";

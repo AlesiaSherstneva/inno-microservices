@@ -6,6 +6,7 @@ import com.innowise.orderservice.model.dto.OrderRequestDto;
 import com.innowise.orderservice.model.dto.OrderResponseDto;
 import com.innowise.orderservice.model.entity.enums.OrderStatus;
 import com.innowise.orderservice.service.OrderService;
+import com.innowise.orderservice.util.Constant;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -46,11 +48,11 @@ public class OrderController {
      * Retrieves a specific order by its unique identifier.
      * Accessible to USER for own orders and ADMIN with full rights.
      *
-     * @param id the unique identifier of the order to retrieve
+     * @param id     the unique identifier of the order to retrieve
      * @param userId the authenticated user's identifier (injected automatically)
      * @return the order details with items and customer information
      * @throws ResourceNotFoundException if the order with given ID does not exist
-     * @throws AccessDeniedException if user does not have permission to access the order
+     * @throws AccessDeniedException     if user does not have permission to access the order
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
@@ -96,7 +98,7 @@ public class OrderController {
      * Accessible to USER role only.
      *
      * @param requestDto the order creation request containing items and their quantities
-     * @param userId the authenticated user's identifier (injected automatically)
+     * @param userId     the authenticated user's identifier (injected automatically)
      * @return the created order with items, total sum of the order and customer information
      * @throws ResourceNotFoundException if any specified item does not exist
      */
@@ -113,12 +115,12 @@ public class OrderController {
      * Updates an existing order's items.
      * Accessible to USER for own orders only.
      *
-     * @param id the unique identifier of the order to update
+     * @param id         the unique identifier of the order to update
      * @param requestDto the order update request containing items and their quantities
-     * @param userId the authenticated user's identifier (injected automatically)
+     * @param userId     the authenticated user's identifier (injected automatically)
      * @return the updated order with items, total sum of the order and customer information
      * @throws ResourceNotFoundException if order with given ID or any specified item does not exist
-     * @throws AccessDeniedException if user doesn't have permission to update the order
+     * @throws AccessDeniedException     if user doesn't have permission to update the order
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
@@ -135,18 +137,27 @@ public class OrderController {
      * Accessible to USER for own orders and ADMIN with full rights.
      * USER just cancels the order, ADMIN permanently deletes it.
      *
-     * @param id the unique identifier of the order to cancel/delete
-     * @param userId the authenticated user's identifier (injected automatically)
+     * @param id             the unique identifier of the order to cancel/delete
+     * @param userId         the authenticated user's identifier (injected automatically)
+     * @param authentication the authentication object containing user authorities
      * @return empty response
      * @throws ResourceNotFoundException if the order with given ID does not exist
-     * @throws AccessDeniedException if user does not have permission to access the order
-     * @throws OrderStatusException if order cannot be cancelled due to its current status
+     * @throws AccessDeniedException     if user does not have permission to access the order
+     * @throws OrderStatusException      if order cannot be cancelled due to its current status
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Void> deleteOrder(@PathVariable("id") Long id,
-                                            @AuthenticationPrincipal Long userId) {
-        orderService.cancelOrDeleteOrder(id, userId);
+                                            @AuthenticationPrincipal Long userId,
+                                            Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals(Constant.ROLE_ADMIN));
+
+        if (isAdmin) {
+            orderService.deleteOrderAsAdmin(id);
+        } else {
+            orderService.cancelOrderAsUser(id, userId);
+        }
 
         return ResponseEntity.noContent().build();
     }

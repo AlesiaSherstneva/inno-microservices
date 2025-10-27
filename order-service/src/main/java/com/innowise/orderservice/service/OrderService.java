@@ -70,13 +70,22 @@ public interface OrderService {
     OrderResponseDto updateOrder(Long orderId, OrderRequestDto orderRequestDto, Long userId);
 
     /**
-     * Cancels or deletes an order based on the role.
+     * Cancels an order by changing its status. Available only for the order owner.
      *
-     * @param orderId the unique identifier of the order to cancel/delete
-     * @param userId the authenticated user's identifier
+     * @param orderId the unique identifier of the order to cancel
+     * @param userId the authenticated user's identifier (must be order owner)
      * @throws ResourceNotFoundException if the order with given ID does not exist
      * @throws AccessDeniedException if user does not have permission to access the order
      * @throws OrderStatusException if order cannot be cancelled due to its current status
      */
-    void cancelOrDeleteOrder(Long orderId, Long userId);
+    void cancelOrderAsUser(Long orderId, Long userId);
+
+    /**
+     * Permanently deletes an order. Available only for administrators.
+     *
+     * @param orderId the unique identifier of the order to delete
+     * @throws ResourceNotFoundException if the order with given ID does not exist
+     * @throws AccessDeniedException if user does not have permission to access the order
+     */
+    void deleteOrderAsAdmin(Long orderId);
 }

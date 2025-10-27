@@ -18,6 +18,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @EntityGraph(value = "Order.withItems")
     Optional<Order> findOrderById(Long id);
 
+    boolean existsOrderByIdAndUserId(Long orderId, Long userId);
+
     @EntityGraph(value = "Order.withItems")
     List<Order> findOrdersByIdIn(List<Long> ids);
 

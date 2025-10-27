@@ -42,6 +42,7 @@ import java.util.Optional;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.serverError;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -119,15 +120,7 @@ class OrderControllerTest {
                         .withHeader("Content-Type", "application/json")
                         .withBody(objectMapper.writeValueAsString(testCustomer))));
 
-        System.out.println("WireMock port: " + userServiceMock.getPort());
-        System.out.println("WireMock base URL: http://localhost:" + userServiceMock.getPort());
-
         mockMvc.perform(get(String.format("%s/%d", INTERNAL_URL, orderInDb.getId())))
-                .andDo(result -> {
-                    System.out.println("Response status: " + result.getResponse().getStatus());
-                    System.out.println("Response body: " + result.getResponse().getContentAsString());
-                    System.out.println("Response headers: " + result.getResponse().getHeaderNames());
-                })
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_CUSTOMER).exists(),
@@ -168,8 +161,7 @@ class OrderControllerTest {
                 .andExpectAll(
                         status().isForbidden(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.FORBIDDEN.value()),
-                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE)
-                                .value("You don't have permission to access this order"),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value("Access Denied"),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
@@ -193,6 +185,36 @@ class OrderControllerTest {
                         jsonPath(TestConstant.JSON_PATH_CUSTOMER_NAME).value(TestConstant.USER_NAME),
                         jsonPath(TestConstant.JSON_PATH_CUSTOMER_SURNAME).value(TestConstant.USER_NAME),
                         jsonPath(TestConstant.JSON_PATH_CUSTOMER_EMAIL).value(TestConstant.USER_EMAIL),
+                        jsonPath(TestConstant.JSON_PATH_ITEMS).isArray(),
+                        jsonPath(TestConstant.JSON_PATH_ITEMS, hasSize(1)),
+                        jsonPath(TestConstant.JSON_PATH_ITEM_NAME).value(TestConstant.ITEM_NAME),
+                        jsonPath(TestConstant.JSON_PATH_ITEM_PRICE).value(TestConstant.ITEM_PRICE),
+                        jsonPath(TestConstant.JSON_PATH_ITEM_QUANTITY).value(TestConstant.ITEM_QUANTITY),
+                        jsonPath(TestConstant.JSON_PATH_TOTAL_PRICE)
+                                .value(TestConstant.ITEM_PRICE.multiply(BigDecimal.valueOf(TestConstant.ITEM_QUANTITY))),
+                        jsonPath(TestConstant.JSON_PATH_STATUS).value(OrderStatus.NEW.name())
+                );
+    }
+
+    @Test
+    void getOrderByIdWhenUserServiceIsUnavailableIntegrationTest() throws Exception {
+        Order orderInDb = saveFullOrderWithItem();
+
+        setAuthentication(TestConstant.LONG_ID, TestConstant.ROLE_ADMIN_WITH_PREFIX);
+
+        userServiceMock.stubFor(WireMock.get(
+                        urlEqualTo(String.format("%s/%d", EXTERNAL_SERVICE_URL, orderInDb.getId())))
+                .willReturn(serverError()));
+
+        mockMvc.perform(get(String.format("%s/%d", INTERNAL_URL, orderInDb.getId())))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath(TestConstant.JSON_PATH_CUSTOMER).exists(),
+                        jsonPath(TestConstant.JSON_PATH_CUSTOMER_NAME).doesNotExist(),
+                        jsonPath(TestConstant.JSON_PATH_CUSTOMER_SURNAME).doesNotExist(),
+                        jsonPath(TestConstant.JSON_PATH_CUSTOMER_EMAIL).doesNotExist(),
+                        jsonPath(TestConstant.JSON_PATH_CUSTOMER_ERROR_MESSAGE)
+                                .value("User information temporary unavailable"),
                         jsonPath(TestConstant.JSON_PATH_ITEMS).isArray(),
                         jsonPath(TestConstant.JSON_PATH_ITEMS, hasSize(1)),
                         jsonPath(TestConstant.JSON_PATH_ITEM_NAME).value(TestConstant.ITEM_NAME),
@@ -243,6 +265,26 @@ class OrderControllerTest {
     }
 
     @Test
+    void getOrdersByIdsWhenUserServiceIsUnavailableIntegrationTest() throws Exception {
+        Order orderInDb = saveFullOrderWithItem();
+        String ids = String.format("%d,%d", orderInDb.getId(), orderInDb.getId() + 1);
+
+        setAuthentication(TestConstant.LONG_ID, TestConstant.ROLE_ADMIN_WITH_PREFIX);
+
+        userServiceMock.stubFor(WireMock.get(urlPathEqualTo(EXTERNAL_SERVICE_URL))
+                .withQueryParam("ids", matching(String.valueOf(TestConstant.LONG_ID)))
+                .willReturn(serverError()));
+
+        mockMvc.perform(get(INTERNAL_URL)
+                        .param("ids", ids))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY, hasSize(1))
+                );
+    }
+
+    @Test
     void getOrdersByIdsWhenOrderDoesNotExistIntegrationTest() throws Exception {
         setAuthentication(TestConstant.LONG_ID, TestConstant.ROLE_ADMIN_WITH_PREFIX);
 
@@ -280,6 +322,25 @@ class OrderControllerTest {
                 .willReturn(ok()
                         .withHeader("Content-Type", "application/json")
                         .withBody(objectMapper.writeValueAsString(List.of(testCustomer)))));
+
+        mockMvc.perform(get(INTERNAL_URL)
+                        .param("statuses", String.valueOf(orderInDb.getStatus())))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY).isArray(),
+                        jsonPath(TestConstant.JSON_PATH_COMMON_ARRAY, hasSize(1))
+                );
+    }
+
+    @Test
+    void getOrdersByStatusesWhenUserServiceIsUnavailableIntegrationTest() throws Exception {
+        Order orderInDb = saveFullOrderWithItem();
+
+        setAuthentication(TestConstant.LONG_ID, TestConstant.ROLE_ADMIN_WITH_PREFIX);
+
+        userServiceMock.stubFor(WireMock.get(urlPathEqualTo(EXTERNAL_SERVICE_URL))
+                .withQueryParam("ids", matching(String.valueOf(TestConstant.LONG_ID)))
+                .willReturn(serverError()));
 
         mockMvc.perform(get(INTERNAL_URL)
                         .param("statuses", String.valueOf(orderInDb.getStatus())))
@@ -526,7 +587,7 @@ class OrderControllerTest {
                         status().isForbidden(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.FORBIDDEN.value()),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE)
-                                .value("You don't have permission to access this order"),
+                                .value("Access Denied"),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }
@@ -597,8 +658,7 @@ class OrderControllerTest {
                 .andExpectAll(
                         status().isForbidden(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.FORBIDDEN.value()),
-                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE)
-                                .value("You don't have permission to access this order"),
+                        jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE).value("Access Denied"),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
                 );
     }

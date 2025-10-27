@@ -44,7 +44,7 @@ public class UserServiceCircuitBreaker {
     private CustomerDto buildUnavailableCustomer(Long userId) {
         return CustomerDto.builder()
                 .userId(userId)
-                .errorMessage("User information temporarily unavailable")
+                .errorMessage("User information temporary unavailable")
                 .build();
     }
 }

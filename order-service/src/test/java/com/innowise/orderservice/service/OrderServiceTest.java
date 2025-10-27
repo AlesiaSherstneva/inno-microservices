@@ -1,5 +1,6 @@
 package com.innowise.orderservice.service;
 
+import com.innowise.orderservice.config.SecurityTestConfig;
 import com.innowise.orderservice.exception.OrderStatusException;
 import com.innowise.orderservice.exception.ResourceNotFoundException;
 import com.innowise.orderservice.model.dto.CustomerDto;
@@ -40,13 +41,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {OrderServiceImpl.class, OrderMapperImpl.class, OrderItemMapperImpl.class})
+@ContextConfiguration(classes = {
+        OrderServiceImpl.class,
+        OrderMapperImpl.class,
+        OrderItemMapperImpl.class,
+        SecurityTestConfig.class
+})
 class OrderServiceTest {
     @MockitoBean
     private OrderRepository orderRepository;
@@ -64,7 +71,6 @@ class OrderServiceTest {
     private static Order testOrder;
     private static Item testItem;
     private static CustomerDto testCustomer;
-    private static CustomerDto failedCustomer;
 
     @BeforeAll
     static void beforeAll() {
@@ -96,14 +102,13 @@ class OrderServiceTest {
                 .surname(TestConstant.USER_NAME)
                 .email(TestConstant.USER_EMAIL)
                 .build();
-        failedCustomer = CustomerDto.builder()
-                .errorMessage("User information temporary unavailable")
-                .build();
     }
 
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void getOrderByIdWhenUserIsOwnerTest() {
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID))
+                .thenReturn(true);
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(testOrder));
         when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(testCustomer);
 
@@ -111,6 +116,7 @@ class OrderServiceTest {
 
         assertOrderResponseDtoFields(resultDto, testCustomer);
 
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
         verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
     }
@@ -118,17 +124,14 @@ class OrderServiceTest {
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void getOrderByIdWhenUserIsNotOwnerTest() {
-        Order otherUserOrder = Order.builder()
-                .userId(2L)
-                .build();
-
-        when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(otherUserOrder));
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(false);
 
         assertThatThrownBy(() -> orderService.getOrderById(TestConstant.LONG_ID, TestConstant.LONG_ID))
                 .isInstanceOf(AccessDeniedException.class)
-                .hasMessageContaining("You don't have permission to access this order");
+                .hasMessageContaining("Access Denied");
 
-        verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
+        verify(orderRepository, never()).findOrderById(TestConstant.LONG_ID);
     }
 
     @Test
@@ -142,20 +145,6 @@ class OrderServiceTest {
         OrderResponseDto resultDto = orderService.getOrderById(TestConstant.LONG_ID, adminId);
 
         assertOrderResponseDtoFields(resultDto, testCustomer);
-
-        verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
-        verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
-    }
-
-    @Test
-    @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
-    void getOrderByIdWhenUserServiceUnavailableTest() {
-        when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(testOrder));
-        when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(failedCustomer);
-
-        OrderResponseDto resultDto = orderService.getOrderById(TestConstant.LONG_ID, TestConstant.LONG_ID);
-
-        assertOrderResponseDtoFields(resultDto, failedCustomer);
 
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
         verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
@@ -207,25 +196,6 @@ class OrderServiceTest {
 
     @Test
     @WithMockUser(roles = TestConstant.ROLE_ADMIN_WITHOUT_PREFIX)
-    void getOrdersByIdsWhenUserServiceUnavailableTest() {
-        when(orderRepository.findOrdersByIdIn(TestConstant.LONG_IDS)).thenReturn(List.of(testOrder));
-        when(circuitBreaker.getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS))
-                .thenReturn(Map.of(TestConstant.LONG_ID, failedCustomer));
-
-        List<OrderResponseDto> resultList = orderService.getOrdersByIds(TestConstant.LONG_IDS);
-
-        assertThat(resultList).isNotNull().isNotEmpty().hasSize(1);
-
-        OrderResponseDto resultDto = resultList.get(0);
-
-        assertOrderResponseDtoFields(resultDto, failedCustomer);
-
-        verify(orderRepository, times(1)).findOrdersByIdIn(TestConstant.LONG_IDS);
-        verify(circuitBreaker, times(1)).getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS);
-    }
-
-    @Test
-    @WithMockUser(roles = TestConstant.ROLE_ADMIN_WITHOUT_PREFIX)
     void getOrdersByStatusesWhenOrderExistsTest() {
         List<OrderStatus> requestStatuses = List.of(OrderStatus.NEW);
 
@@ -257,27 +227,6 @@ class OrderServiceTest {
         assertThat(resultList).isNotNull().isEmpty();
 
         verify(orderRepository, times(1)).findOrdersByStatusIn(requestStatuses);
-    }
-
-    @Test
-    @WithMockUser(roles = TestConstant.ROLE_ADMIN_WITHOUT_PREFIX)
-    void getOrdersByStatusesWhenUserServiceUnavailableTest() {
-        List<OrderStatus> requestStatuses = List.of(OrderStatus.PROCESSING);
-
-        when(orderRepository.findOrdersByStatusIn(requestStatuses)).thenReturn(List.of(testOrder));
-        when(circuitBreaker.getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS))
-                .thenReturn(Map.of(TestConstant.LONG_ID, failedCustomer));
-
-        List<OrderResponseDto> resultList = orderService.getOrdersByStatuses(requestStatuses);
-
-        assertThat(resultList).isNotNull().isNotEmpty().hasSize(1);
-
-        OrderResponseDto resultDto = resultList.get(0);
-
-        assertOrderResponseDtoFields(resultDto, failedCustomer);
-
-        verify(orderRepository, times(1)).findOrdersByStatusIn(requestStatuses);
-        verify(circuitBreaker, times(1)).getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS);
     }
 
     @Test
@@ -318,6 +267,7 @@ class OrderServiceTest {
                 .build();
         orderInDb.getOrderItems().add(OrderItem.builder().build());
 
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(true);
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(orderInDb));
         when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
@@ -327,6 +277,7 @@ class OrderServiceTest {
 
         assertOrderResponseDtoFields(resultDto, testCustomer);
 
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
         verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
         verify(orderRepository, times(1)).save(any(Order.class));
@@ -336,6 +287,7 @@ class OrderServiceTest {
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void updateOrderWhenOrderDoesNotExistTest() {
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(true);
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.updateOrder(TestConstant.LONG_ID, testRequestDto, TestConstant.LONG_ID))
@@ -343,23 +295,21 @@ class OrderServiceTest {
                 .hasMessageContaining("Order not found")
                 .hasMessageContaining(String.valueOf(TestConstant.LONG_ID));
 
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
     }
 
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void updateOrderWhenUserIsNotOwnerTest() {
-        Order otherUserOrder = Order.builder()
-                .userId(2L)
-                .build();
-
-        when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(otherUserOrder));
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(false);
 
         assertThatThrownBy(() -> orderService.updateOrder(TestConstant.LONG_ID, testRequestDto, TestConstant.LONG_ID))
                 .isInstanceOf(AccessDeniedException.class)
-                .hasMessageContaining("You don't have permission to access this order");
+                .hasMessageContaining("Access Denied");
 
-        verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
+        verify(orderRepository, never()).findOrderById(TestConstant.LONG_ID);
     }
 
     @Test
@@ -371,6 +321,7 @@ class OrderServiceTest {
                 .build();
         orderInDb.getOrderItems().add(OrderItem.builder().build());
 
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(true);
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(orderInDb));
         when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.empty());
 
@@ -379,17 +330,20 @@ class OrderServiceTest {
                 .hasMessageContaining("Item not found")
                 .hasMessageContaining(String.valueOf(TestConstant.INTEGER_ID));
 
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
         verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
     }
 
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
-    void deleteOrderAsUserWhenUserIsOwnerTest() {
+    void cancelOrderAsUserWhenUserIsOwnerTest() {
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(true);
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(testOrder));
 
-        orderService.cancelOrDeleteOrder(TestConstant.LONG_ID, TestConstant.LONG_ID);
+        orderService.cancelOrderAsUser(TestConstant.LONG_ID, TestConstant.LONG_ID);
 
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
         verify(orderRepository, times(1)).cancelOrderAsUser(TestConstant.LONG_ID);
     }
@@ -397,17 +351,14 @@ class OrderServiceTest {
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void deleteOrderAsUserWhenUserIsNotOwnerTest() {
-        Order otherUserOrder = Order.builder()
-                .userId(2L)
-                .build();
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(false);
 
-        when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(otherUserOrder));
-
-        assertThatThrownBy(() -> orderService.cancelOrDeleteOrder(TestConstant.LONG_ID, TestConstant.LONG_ID))
+        assertThatThrownBy(() -> orderService.cancelOrderAsUser(TestConstant.LONG_ID, TestConstant.LONG_ID))
                 .isInstanceOf(AccessDeniedException.class)
-                .hasMessageContaining("You don't have permission to access this order");
+                .hasMessageContaining("Access Denied");
 
-        verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
+        verify(orderRepository, never()).findOrderById(TestConstant.LONG_ID);
     }
 
     @Test
@@ -418,13 +369,15 @@ class OrderServiceTest {
                 .status(OrderStatus.CANCELLED)
                 .build();
 
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(true);
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(cancelledOrder));
 
-        assertThatThrownBy(() -> orderService.cancelOrDeleteOrder(TestConstant.LONG_ID, TestConstant.LONG_ID))
+        assertThatThrownBy(() -> orderService.cancelOrderAsUser(TestConstant.LONG_ID, TestConstant.LONG_ID))
                 .isInstanceOf(OrderStatusException.class)
                 .hasMessageMatching("Order with id \\d+ is already cancelled")
                 .hasMessageContaining(String.valueOf(TestConstant.LONG_ID));
 
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
     }
 
@@ -436,34 +389,36 @@ class OrderServiceTest {
                 .status(OrderStatus.COMPLETED)
                 .build();
 
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(true);
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(completedOrder));
 
-        assertThatThrownBy(() -> orderService.cancelOrDeleteOrder(TestConstant.LONG_ID, TestConstant.LONG_ID))
+        assertThatThrownBy(() -> orderService.cancelOrderAsUser(TestConstant.LONG_ID, TestConstant.LONG_ID))
                 .isInstanceOf(OrderStatusException.class)
                 .hasMessageContaining("Cannot cancel completed order with id")
                 .hasMessageContaining(String.valueOf(TestConstant.LONG_ID));
 
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
     }
 
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void deleteOrderWhenOrderDoesNotExistTest() {
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(true);
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> orderService.cancelOrDeleteOrder(TestConstant.LONG_ID, TestConstant.LONG_ID))
+        assertThatThrownBy(() -> orderService.cancelOrderAsUser(TestConstant.LONG_ID, TestConstant.LONG_ID))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Order not found")
                 .hasMessageContaining(String.valueOf(TestConstant.LONG_ID));
 
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
     }
 
     @Test
     @WithMockUser(roles = TestConstant.ROLE_ADMIN_WITHOUT_PREFIX)
     void deleteOrdersAsAdminSuccessfulTest() {
-        Long adminId = 2L;
-
         Order cancelledOrder = Order.builder()
                 .userId(TestConstant.LONG_ID)
                 .status(OrderStatus.CANCELLED)
@@ -477,7 +432,7 @@ class OrderServiceTest {
         for (Order order : ordersToDelete) {
             when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(order));
 
-            orderService.cancelOrDeleteOrder(TestConstant.LONG_ID, adminId);
+            orderService.deleteOrderAsAdmin(TestConstant.LONG_ID);
         }
 
         verify(orderRepository, times(3)).findOrderById(TestConstant.LONG_ID);

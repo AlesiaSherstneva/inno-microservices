@@ -14,10 +14,9 @@ import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
 import com.innowise.orderservice.service.OrderService;
 import com.innowise.orderservice.service.circuitbreaker.UserServiceCircuitBreaker;
-import com.innowise.orderservice.util.Constant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,13 +34,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN') or @orderRepository.existsOrderByIdAndUserId(#orderId, #userId)")
     public OrderResponseDto getOrderById(Long orderId, Long userId) {
         Order retrievedOrder = orderRepository.findOrderById(orderId)
                 .orElseThrow(() -> ResourceNotFoundException.orderNotFound(orderId));
-
-        if (!retrievedOrder.getUserId().equals(userId) && !isUserAdmin()) {
-            throw new AccessDeniedException("You don't have permission to access this order");
-        }
 
         CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(retrievedOrder.getUserId());
 
@@ -85,6 +81,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN') or @orderRepository.existsOrderByIdAndUserId(#orderId, #userId)")
     public OrderResponseDto updateOrder(Long orderId, OrderRequestDto orderRequestDto, Long userId) {
         Order orderToUpdate = orderRepository.findOrderById(orderId)
                 .orElseThrow(() -> ResourceNotFoundException.orderNotFound(orderId));
@@ -106,31 +103,29 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public void cancelOrDeleteOrder(Long orderId, Long userId) {
+    @PreAuthorize("@orderRepository.existsOrderByIdAndUserId(#orderId, #userId)")
+    public void cancelOrderAsUser(Long orderId, Long userId) {
+        Order orderToCancel = orderRepository.findOrderById(orderId)
+                .orElseThrow(() -> ResourceNotFoundException.orderNotFound(orderId));
+
+        if (orderToCancel.getStatus().equals(OrderStatus.CANCELLED)) {
+            throw OrderStatusException.orderIsAlreadyCancelled(orderId);
+        }
+        if (orderToCancel.getStatus().equals(OrderStatus.COMPLETED)) {
+            throw OrderStatusException.orderIsCompleted(orderId);
+        }
+
+        orderRepository.cancelOrderAsUser(orderId);
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deleteOrderAsAdmin(Long orderId) {
         Order orderToDelete = orderRepository.findOrderById(orderId)
                 .orElseThrow(() -> ResourceNotFoundException.orderNotFound(orderId));
 
-        if (!orderToDelete.getUserId().equals(userId) && !isUserAdmin()) {
-            throw new AccessDeniedException("You don't have permission to access this order");
-        }
-
-        if (isUserAdmin()) {
-            orderRepository.delete(orderToDelete);
-        } else {
-            if (orderToDelete.getStatus().equals(OrderStatus.CANCELLED)) {
-                throw OrderStatusException.orderIsAlreadyCancelled(orderId);
-            }
-            if (orderToDelete.getStatus().equals(OrderStatus.COMPLETED)) {
-                throw OrderStatusException.orderIsCompleted(orderId);
-            }
-            orderRepository.cancelOrderAsUser(orderId);
-        }
-    }
-
-    private boolean isUserAdmin() {
-        return SecurityContextHolder.getContext().getAuthentication()
-                .getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals(Constant.ROLE_ADMIN));
+        orderRepository.delete(orderToDelete);
     }
 
     private OrderItem convertToOrderItem(OrderItemRequestDto requestDto) {
