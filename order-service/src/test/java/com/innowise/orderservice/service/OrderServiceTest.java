@@ -1,6 +1,5 @@
 package com.innowise.orderservice.service;
 
-import com.innowise.orderservice.client.UserServiceClient;
 import com.innowise.orderservice.exception.OrderStatusException;
 import com.innowise.orderservice.exception.ResourceNotFoundException;
 import com.innowise.orderservice.model.dto.CustomerDto;
@@ -16,9 +15,9 @@ import com.innowise.orderservice.model.entity.OrderItem;
 import com.innowise.orderservice.model.entity.enums.OrderStatus;
 import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
+import com.innowise.orderservice.service.circuitbreaker.UserServiceCircuitBreaker;
 import com.innowise.orderservice.service.impl.OrderServiceImpl;
 import com.innowise.orderservice.util.TestConstant;
-import feign.FeignException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -34,6 +33,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,7 +55,7 @@ class OrderServiceTest {
     private ItemRepository itemRepository;
 
     @MockitoBean
-    private UserServiceClient userServiceClient;
+    private UserServiceCircuitBreaker circuitBreaker;
 
     @Autowired
     private OrderService orderService;
@@ -105,14 +105,14 @@ class OrderServiceTest {
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void getOrderByIdWhenUserIsOwnerTest() {
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(testOrder));
-        when(userServiceClient.getUserById(TestConstant.LONG_ID)).thenReturn(testCustomer);
+        when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(testCustomer);
 
         OrderResponseDto resultDto = orderService.getOrderById(TestConstant.LONG_ID, TestConstant.LONG_ID);
 
         assertOrderResponseDtoFields(resultDto, testCustomer);
 
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
-        verify(userServiceClient, times(1)).getUserById(TestConstant.LONG_ID);
+        verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
     }
 
     @Test
@@ -137,28 +137,28 @@ class OrderServiceTest {
         Long adminId = 2L;
 
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(testOrder));
-        when(userServiceClient.getUserById(TestConstant.LONG_ID)).thenReturn(testCustomer);
+        when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(testCustomer);
 
         OrderResponseDto resultDto = orderService.getOrderById(TestConstant.LONG_ID, adminId);
 
         assertOrderResponseDtoFields(resultDto, testCustomer);
 
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
-        verify(userServiceClient, times(1)).getUserById(TestConstant.LONG_ID);
+        verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
     }
 
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void getOrderByIdWhenUserServiceUnavailableTest() {
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(testOrder));
-        when(userServiceClient.getUserById(TestConstant.LONG_ID)).thenThrow(FeignException.class);
+        when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(failedCustomer);
 
         OrderResponseDto resultDto = orderService.getOrderById(TestConstant.LONG_ID, TestConstant.LONG_ID);
 
         assertOrderResponseDtoFields(resultDto, failedCustomer);
 
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
-        verify(userServiceClient, times(1)).getUserById(TestConstant.LONG_ID);
+        verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
     }
 
     @Test
@@ -178,7 +178,8 @@ class OrderServiceTest {
     @WithMockUser(roles = TestConstant.ROLE_ADMIN_WITHOUT_PREFIX)
     void getOrdersByIdsWhenOrderExistsTest() {
         when(orderRepository.findOrdersByIdIn(TestConstant.LONG_IDS)).thenReturn(List.of(testOrder));
-        when(userServiceClient.getUsersByIds(TestConstant.LONG_IDS)).thenReturn(List.of(testCustomer));
+        when(circuitBreaker.getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS))
+                .thenReturn(Map.of(TestConstant.LONG_ID, testCustomer));
 
         List<OrderResponseDto> resultList = orderService.getOrdersByIds(TestConstant.LONG_IDS);
 
@@ -189,7 +190,7 @@ class OrderServiceTest {
         assertOrderResponseDtoFields(resultDto, testCustomer);
 
         verify(orderRepository, times(1)).findOrdersByIdIn(TestConstant.LONG_IDS);
-        verify(userServiceClient, times(1)).getUsersByIds(TestConstant.LONG_IDS);
+        verify(circuitBreaker, times(1)).getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS);
     }
 
     @Test
@@ -208,7 +209,8 @@ class OrderServiceTest {
     @WithMockUser(roles = TestConstant.ROLE_ADMIN_WITHOUT_PREFIX)
     void getOrdersByIdsWhenUserServiceUnavailableTest() {
         when(orderRepository.findOrdersByIdIn(TestConstant.LONG_IDS)).thenReturn(List.of(testOrder));
-        when(userServiceClient.getUsersByIds(TestConstant.LONG_IDS)).thenThrow(FeignException.class);
+        when(circuitBreaker.getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS))
+                .thenReturn(Map.of(TestConstant.LONG_ID, failedCustomer));
 
         List<OrderResponseDto> resultList = orderService.getOrdersByIds(TestConstant.LONG_IDS);
 
@@ -219,7 +221,7 @@ class OrderServiceTest {
         assertOrderResponseDtoFields(resultDto, failedCustomer);
 
         verify(orderRepository, times(1)).findOrdersByIdIn(TestConstant.LONG_IDS);
-        verify(userServiceClient, times(1)).getUsersByIds(TestConstant.LONG_IDS);
+        verify(circuitBreaker, times(1)).getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS);
     }
 
     @Test
@@ -228,7 +230,8 @@ class OrderServiceTest {
         List<OrderStatus> requestStatuses = List.of(OrderStatus.NEW);
 
         when(orderRepository.findOrdersByStatusIn(requestStatuses)).thenReturn(List.of(testOrder));
-        when(userServiceClient.getUsersByIds(TestConstant.LONG_IDS)).thenReturn(List.of(testCustomer));
+        when(circuitBreaker.getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS))
+                .thenReturn(Map.of(TestConstant.LONG_ID, testCustomer));
 
         List<OrderResponseDto> resultList = orderService.getOrdersByStatuses(requestStatuses);
 
@@ -239,7 +242,7 @@ class OrderServiceTest {
         assertOrderResponseDtoFields(resultDto, testCustomer);
 
         verify(orderRepository, times(1)).findOrdersByStatusIn(requestStatuses);
-        verify(userServiceClient, times(1)).getUsersByIds(TestConstant.LONG_IDS);
+        verify(circuitBreaker, times(1)).getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS);
     }
 
     @Test
@@ -262,7 +265,8 @@ class OrderServiceTest {
         List<OrderStatus> requestStatuses = List.of(OrderStatus.PROCESSING);
 
         when(orderRepository.findOrdersByStatusIn(requestStatuses)).thenReturn(List.of(testOrder));
-        when(userServiceClient.getUsersByIds(TestConstant.LONG_IDS)).thenThrow(FeignException.class);
+        when(circuitBreaker.getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS))
+                .thenReturn(Map.of(TestConstant.LONG_ID, failedCustomer));
 
         List<OrderResponseDto> resultList = orderService.getOrdersByStatuses(requestStatuses);
 
@@ -273,7 +277,7 @@ class OrderServiceTest {
         assertOrderResponseDtoFields(resultDto, failedCustomer);
 
         verify(orderRepository, times(1)).findOrdersByStatusIn(requestStatuses);
-        verify(userServiceClient, times(1)).getUsersByIds(TestConstant.LONG_IDS);
+        verify(circuitBreaker, times(1)).getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS);
     }
 
     @Test
@@ -281,7 +285,7 @@ class OrderServiceTest {
     void createOrderSuccessfulTest() {
         when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
-        when(userServiceClient.getUserById(TestConstant.LONG_ID)).thenReturn(testCustomer);
+        when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(testCustomer);
 
         OrderResponseDto resultDto = orderService.createOrder(TestConstant.LONG_ID, testRequestDto);
 
@@ -289,7 +293,7 @@ class OrderServiceTest {
 
         verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
         verify(orderRepository, times(1)).save(any(Order.class));
-        verify(userServiceClient, times(1)).getUserById(TestConstant.LONG_ID);
+        verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
     }
 
     @Test
@@ -317,7 +321,7 @@ class OrderServiceTest {
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(orderInDb));
         when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
-        when(userServiceClient.getUserById(TestConstant.LONG_ID)).thenReturn(testCustomer);
+        when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(testCustomer);
 
         OrderResponseDto resultDto = orderService.updateOrder(TestConstant.LONG_ID, testRequestDto, TestConstant.LONG_ID);
 
@@ -326,7 +330,7 @@ class OrderServiceTest {
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
         verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
         verify(orderRepository, times(1)).save(any(Order.class));
-        verify(userServiceClient, times(1)).getUserById(TestConstant.LONG_ID);
+        verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
     }
 
     @Test
@@ -482,7 +486,7 @@ class OrderServiceTest {
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(orderRepository, itemRepository, userServiceClient);
+        verifyNoMoreInteractions(orderRepository, itemRepository, circuitBreaker);
     }
 
     private void assertOrderResponseDtoFields(OrderResponseDto responseDto, CustomerDto expectedCustomer) {

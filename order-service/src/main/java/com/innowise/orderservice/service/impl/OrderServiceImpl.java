@@ -1,6 +1,5 @@
 package com.innowise.orderservice.service.impl;
 
-import com.innowise.orderservice.client.UserServiceClient;
 import com.innowise.orderservice.exception.OrderStatusException;
 import com.innowise.orderservice.exception.ResourceNotFoundException;
 import com.innowise.orderservice.model.dto.CustomerDto;
@@ -14,8 +13,8 @@ import com.innowise.orderservice.model.entity.enums.OrderStatus;
 import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
 import com.innowise.orderservice.service.OrderService;
+import com.innowise.orderservice.service.circuitbreaker.UserServiceCircuitBreaker;
 import com.innowise.orderservice.util.Constant;
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,8 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +31,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final ItemRepository itemRepository;
     private final OrderMapper orderMapper;
-    private final UserServiceClient userServiceClient;
+    private final UserServiceCircuitBreaker circuitBreaker;
 
     @Override
     @Transactional(readOnly = true)
@@ -46,7 +43,9 @@ public class OrderServiceImpl implements OrderService {
             throw new AccessDeniedException("You don't have permission to access this order");
         }
 
-        return orderMapper.toDto(retrievedOrder, getCustomerInfoOrFallback(retrievedOrder.getUserId()));
+        CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(retrievedOrder.getUserId());
+
+        return orderMapper.toDto(retrievedOrder, customer);
     }
 
     @Override
@@ -54,12 +53,9 @@ public class OrderServiceImpl implements OrderService {
     public List<OrderResponseDto> getOrdersByIds(List<Long> orderIds) {
         List<Order> retrievedOrders = orderRepository.findOrdersByIdIn(orderIds);
 
-        List<Long> userIds = retrievedOrders.stream()
-                .map(Order::getUserId)
-                .distinct()
-                .toList();
+        Map<Long, CustomerDto> customers = getIdsToCustomersMap(retrievedOrders);
 
-        return orderMapper.toResponseDtoList(retrievedOrders, getCustomersInfoOrFallbackMap(userIds));
+        return orderMapper.toResponseDtoList(retrievedOrders, customers);
     }
 
     @Override
@@ -67,12 +63,9 @@ public class OrderServiceImpl implements OrderService {
     public List<OrderResponseDto> getOrdersByStatuses(List<OrderStatus> statuses) {
         List<Order> retrievedOrders = orderRepository.findOrdersByStatusIn(statuses);
 
-        List<Long> userIds = retrievedOrders.stream()
-                .map(Order::getUserId)
-                .distinct()
-                .toList();
+        Map<Long, CustomerDto> customers = getIdsToCustomersMap(retrievedOrders);
 
-        return orderMapper.toResponseDtoList(retrievedOrders, getCustomersInfoOrFallbackMap(userIds));
+        return orderMapper.toResponseDtoList(retrievedOrders, customers);
     }
 
     @Override
@@ -85,8 +78,9 @@ public class OrderServiceImpl implements OrderService {
                 .forEach(newOrder::addOrderItem);
 
         Order createdOrder = orderRepository.save(newOrder);
+        CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(userId);
 
-        return orderMapper.toDto(createdOrder, getCustomerInfoOrFallback(userId));
+        return orderMapper.toDto(createdOrder, customer);
     }
 
     @Override
@@ -105,8 +99,9 @@ public class OrderServiceImpl implements OrderService {
                 .forEach(orderToUpdate::addOrderItem);
 
         Order updatedOrder = orderRepository.save(orderToUpdate);
+        CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(userId);
 
-        return orderMapper.toDto(updatedOrder, getCustomerInfoOrFallback(userId));
+        return orderMapper.toDto(updatedOrder, customer);
     }
 
     @Override
@@ -146,32 +141,14 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-    private CustomerDto getCustomerInfoOrFallback(Long userId) {
-        try {
-            return userServiceClient.getUserById(userId);
-        } catch (FeignException ex) {
-            return CustomerDto.builder()
-                    .errorMessage("User information temporary unavailable")
-                    .build();
-        }
-    }
+    private Map<Long, CustomerDto> getIdsToCustomersMap(List<Order> retrievedOrders) {
+        List<Long> userIds = retrievedOrders.stream()
+                .map(Order::getUserId)
+                .distinct()
+                .toList();
 
-    private Map<Long, CustomerDto> getCustomersInfoOrFallbackMap(List<Long> userIds) {
-        if (userIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        try {
-            List<CustomerDto> customers = userServiceClient.getUsersByIds(userIds);
-            return customers.stream()
-                    .collect(Collectors.toMap(CustomerDto::getUserId, Function.identity()));
-        } catch (FeignException ex) {
-            CustomerDto unavailableCustomer = CustomerDto.builder()
-                    .errorMessage("User information temporary unavailable")
-                    .build();
-
-            return userIds.stream()
-                    .collect(Collectors.toMap(Function.identity(), userId -> unavailableCustomer));
-        }
+        return userIds.isEmpty()
+                ? Collections.emptyMap()
+                : circuitBreaker.getCustomersInfoOrFallbackMap(userIds);
     }
 }

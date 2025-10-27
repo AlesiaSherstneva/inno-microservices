@@ -71,11 +71,13 @@ class OrderControllerTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.cloud.openfeign.client.config.user-service.url",
+                () -> "http://localhost:%s/api/v1".formatted(userServiceMock.getPort()));
     }
 
     @RegisterExtension
     private static final WireMockExtension userServiceMock = WireMockExtension.newInstance()
-            .options(wireMockConfig().port(8080))
+            .options(wireMockConfig().dynamicPort())
             .build();
 
     private static final String INTERNAL_URL = "/orders";
@@ -117,7 +119,15 @@ class OrderControllerTest {
                         .withHeader("Content-Type", "application/json")
                         .withBody(objectMapper.writeValueAsString(testCustomer))));
 
+        System.out.println("WireMock port: " + userServiceMock.getPort());
+        System.out.println("WireMock base URL: http://localhost:" + userServiceMock.getPort());
+
         mockMvc.perform(get(String.format("%s/%d", INTERNAL_URL, orderInDb.getId())))
+                .andDo(result -> {
+                    System.out.println("Response status: " + result.getResponse().getStatus());
+                    System.out.println("Response body: " + result.getResponse().getContentAsString());
+                    System.out.println("Response headers: " + result.getResponse().getHeaderNames());
+                })
                 .andExpectAll(
                         status().isOk(),
                         jsonPath(TestConstant.JSON_PATH_CUSTOMER).exists(),
@@ -171,7 +181,7 @@ class OrderControllerTest {
         setAuthentication(2L, TestConstant.ROLE_ADMIN_WITH_PREFIX);
 
         userServiceMock.stubFor(WireMock.get(
-                        urlEqualTo(String.format("%s/%d", EXTERNAL_SERVICE_URL, TestConstant.LONG_ID)))
+                        urlEqualTo(String.format("%s/%d", EXTERNAL_SERVICE_URL, orderInDb.getId())))
                 .willReturn(ok()
                         .withHeader("Content-Type", "application/json")
                         .withBody(objectMapper.writeValueAsString(testCustomer))));
