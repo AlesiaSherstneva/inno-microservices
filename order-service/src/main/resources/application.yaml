@@ -1,34 +1,21 @@
 server:
   port: 8082
-  servlet:
-    context-path: /api/v1
 
 spring:
   application:
     name: order-service
+  config:
+    activate:
+      on-profile: default
+    import: configserver:http://localhost:8888
   datasource:
     url: jdbc:postgresql://localhost:5435/inno-orders-db
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: true
-  liquibase:
-    enabled: true
-    change-log: db/changelog/db.changelog-master.yaml
   cloud:
     openfeign:
       client:
         config:
           user-service:
             url: http://localhost:8080/api/v1
-
-jwt:
-  secret: myVerySecretKeyNotLessThan32CharactersLong
-  access-token-expiration: 3600000
-  refresh-token-expiration: 604800000
 
 resilience4j.circuitbreaker:
   instances:

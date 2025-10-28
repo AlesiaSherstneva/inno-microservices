@@ -118,3 +118,5 @@ services:
     depends_on:
       postgres-3:
         condition: service_healthy
+      config-server:
+        condition: service_healthy
