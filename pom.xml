@@ -20,6 +20,7 @@
         <module>user-service</module>
         <module>security-starter</module>
         <module>auth-service</module>
+        <module>order-service</module>
     </modules>
 
     <properties>
@@ -36,6 +37,7 @@
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
         <jacoco.version>0.8.13</jacoco.version>
         <jjwt.version>0.13.0</jjwt.version>
+        <wiremock.version>3.13.1</wiremock.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -92,6 +94,12 @@
                 <version>${testcontainers.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.wiremock</groupId>
+                <artifactId>wiremock-standalone</artifactId>
+                <version>${wiremock.version}</version>
+                <scope>test</scope>
             </dependency>
 
             <dependency>

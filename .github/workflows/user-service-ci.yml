@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: UserService CI Pipeline
 
 on: [push, pull_request]
 
@@ -56,7 +56,7 @@ jobs:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_DB: test-db
+          POSTGRES_DB: user-test-db
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
         options: >-
@@ -87,7 +87,7 @@ jobs:
           cd ${{ env.SERVICE_DIR }}
           mvn verify -DskipUnitTests
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/test-db
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/user-test-db
           SPRING_DATASOURCE_USERNAME: test
           SPRING_DATASOURCE_PASSWORD: test
 

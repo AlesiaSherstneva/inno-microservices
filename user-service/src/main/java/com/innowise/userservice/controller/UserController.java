@@ -44,7 +44,8 @@ public class UserController {
 
     /**
      * Retrieves a user by unique identifier.
-     * Users can only access their own data unless they have ADMIN role.
+     * Accessible to ADMIN with full rights, SERVICE for internal communication,
+     * and USERS for their own data only.
      *
      * @param id the unique identifier of the user to retrieve
      * @return the user data
@@ -52,7 +53,7 @@ public class UserController {
      * @throws AccessDeniedException if user does not have permission to access the resource
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and #id == authentication.principal)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE') or (hasRole('USER') and #id == authentication.principal)")
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable("id") Long id) {
         UserResponseDto retrievedUser = userService.getUserById(id);
 
@@ -76,14 +77,15 @@ public class UserController {
     }
 
     /**
-     * Retrieves specific users by their IDs. Requires ADMIN role.
+     * Retrieves specific users by their IDs.
+     * Accessible to ADMIN with full rights and SERVICE for internal communication.
      *
      * @param ids list of user IDs to filter by
      * @return list of users, empty list if no users found by given IDs
      * @throws AccessDeniedException if user does not have ADMIN role
      */
     @GetMapping(params = "ids")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
     public ResponseEntity<List<UserResponseDto>> getUsersByIds(@RequestParam @NotEmpty List<Long> ids) {
         List<UserResponseDto> retrievedUsers = userService.getUsersByIds(ids);
 

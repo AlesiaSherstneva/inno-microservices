@@ -7,7 +7,7 @@ spring:
   application:
     name: user-service
   datasource:
-    url: jdbc:postgresql://localhost:5433/inno-db
+    url: jdbc:postgresql://localhost:5433/inno-users-db
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
