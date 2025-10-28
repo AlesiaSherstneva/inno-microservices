@@ -10,6 +10,8 @@ spring:
     import: configserver:http://localhost:8888
   datasource:
     url: jdbc:postgresql://localhost:5433/inno-users-db
+    username: postgres
+    password: postgres
   data:
     redis:
       host: localhost
