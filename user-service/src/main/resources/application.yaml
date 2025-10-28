@@ -10,16 +10,6 @@ spring:
     import: configserver:http://localhost:8888
   datasource:
     url: jdbc:postgresql://localhost:5433/inno-users-db
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: true
-  liquibase:
-    enabled: true
-    change-log: db/changelog/db.changelog-master.yaml
   data:
     redis:
       host: localhost

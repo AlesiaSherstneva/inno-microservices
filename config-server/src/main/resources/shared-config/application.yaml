@@ -2,6 +2,18 @@ server:
   servlet:
     context-path: /api/v1
 
+spring:
+  driver-class-name: org.postgresql.Driver
+  username: postgres
+  password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  liquibase:
+    enabled: true
+    change-log: db/changelog/db.changelog-master.yaml
+
 jwt:
   secret: myVerySecretKeyNotLessThan32CharactersLong
   access-token-expiration: 3600000
