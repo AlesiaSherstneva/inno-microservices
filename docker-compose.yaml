@@ -103,6 +103,8 @@ services:
     depends_on:
       postgres-2:
         condition: service_healthy
+      config-server:
+        condition: service_healthy
 
   order-service:
     build:
