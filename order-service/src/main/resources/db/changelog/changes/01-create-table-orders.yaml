@@ -29,4 +29,4 @@ databaseChangeLog:
       author: alesia.sharstniova@innowise.com
       changes:
         - sql:
-            sql: CREATE INDEX idx_orders_id_user_id ON(id, user_id)
+            sql: CREATE INDEX idx_orders_id_user_id ON orders(id, user_id)
