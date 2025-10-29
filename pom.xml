@@ -20,8 +20,9 @@
         <module>user-service</module>
         <module>security-starter</module>
         <module>auth-service</module>
-        <module>config-server</module>
         <module>order-service</module>
+        <module>config-server</module>
+        <module>api-gateway</module>
     </modules>
 
     <properties>
