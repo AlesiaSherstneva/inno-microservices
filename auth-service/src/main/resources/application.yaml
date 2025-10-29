@@ -10,6 +10,8 @@ spring:
     import: configserver:http://localhost:8888
   datasource:
     url: jdbc:postgresql://localhost:5434/inno-auth-db
+    username: postgres
+    password: postgres
   cloud:
     openfeign:
       client:
