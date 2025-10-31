@@ -1,8 +1,9 @@
 package com.innowise.userservice.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.innowise.securitystarter.jwt.JwtAuthenticationFilter;
+import com.innowise.securitystarter.jwt.JwtAuthenticationWebMvcFilter;
 import com.innowise.securitystarter.jwt.JwtProvider;
+import com.innowise.securitystarter.util.SecurityConstant;
 import com.innowise.userservice.model.dto.ErrorResponseDto;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -35,7 +36,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthenticationWebMvcFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(this::handleAuthException)
                 )
@@ -49,7 +50,7 @@ public class SecurityConfig {
                                      AuthenticationException ex) throws IOException {
         ErrorResponseDto errorResponse = ErrorResponseDto.builder()
                 .status(HttpStatus.UNAUTHORIZED.value())
-                .errorMessage("Invalid authentication token")
+                .errorMessage(SecurityConstant.INVALID_TOKEN_ERROR_MESSAGE)
                 .timestamp(LocalDateTime.now())
                 .build();
 
