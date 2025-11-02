@@ -26,5 +26,5 @@ public class ErrorResponseDto {
      * Timestamp when the error occurred. Automatically set to current time.
      */
     @Builder.Default
-    private LocalDateTime timestamp = LocalDateTime.now();
+    private String timestamp = LocalDateTime.now().toString();
 }
