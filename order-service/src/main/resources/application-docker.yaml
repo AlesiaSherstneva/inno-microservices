@@ -1,4 +1,6 @@
 server:
+  servlet:
+    context-path: ${SERVICES_COMMON_PATH}
   port: 8083
 
 spring:
@@ -8,11 +10,11 @@ spring:
     import: configserver:http://config-server:8888
   datasource:
     url: jdbc:postgresql://order-service-postgres:5432/inno-orders-db
-    username: postgres
-    password: postgres
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   cloud:
     openfeign:
       client:
         config:
           user-service:
-            url: http://user-service:8081/api/v1
+            url: ${USER_SERVICE_DOCKER_URL}${SERVICES_COMMON_PATH}

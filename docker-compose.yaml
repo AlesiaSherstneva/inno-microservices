@@ -83,6 +83,8 @@ services:
       - 8081:8081
     environment:
       SPRING_PROFILES_ACTIVE: docker
+    env_file:
+      - .env
     depends_on:
       postgres-1:
         condition: service_healthy
@@ -100,6 +102,8 @@ services:
       - 8082:8082
     environment:
       SPRING_PROFILES_ACTIVE: docker
+    env_file:
+      - .env
     depends_on:
       postgres-2:
         condition: service_healthy
@@ -115,6 +119,8 @@ services:
       - 8083:8083
     environment:
       SPRING_PROFILES_ACTIVE: docker
+    env_file:
+      - .env
     depends_on:
       postgres-3:
         condition: service_healthy
@@ -130,6 +136,8 @@ services:
       - 8080:8080
     environment:
       SPRING_PROFILES_ACTIVE: docker
+    env_file:
+      - .env
     depends_on:
       config-server:
         condition: service_healthy
