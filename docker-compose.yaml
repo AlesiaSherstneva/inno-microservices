@@ -61,20 +61,37 @@ services:
       - ./volumes/redis/data:/data
     command: redis-server --appendonly yes
 
+  config-server:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    container_name: config-server
+    ports:
+      - 8888:8888
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   user-service:
     build:
       context: ./user-service
       dockerfile: Dockerfile
     container_name: user-service
     ports:
-      - 8080:8080
+      - 8081:8081
     environment:
       SPRING_PROFILES_ACTIVE: docker
+    env_file:
+      - .env
     depends_on:
       postgres-1:
         condition: service_healthy
       redis:
         condition: service_started
+      config-server:
+        condition: service_healthy
 
   auth-service:
     build:
@@ -82,11 +99,15 @@ services:
       dockerfile: Dockerfile
     container_name: auth-service
     ports:
-      - 8081:8081
+      - 8082:8082
     environment:
       SPRING_PROFILES_ACTIVE: docker
+    env_file:
+      - .env
     depends_on:
       postgres-2:
+        condition: service_healthy
+      config-server:
         condition: service_healthy
 
   order-service:
@@ -95,9 +116,28 @@ services:
       dockerfile: Dockerfile
     container_name: order-service
     ports:
-      - 8082:8082
+      - 8083:8083
     environment:
       SPRING_PROFILES_ACTIVE: docker
+    env_file:
+      - .env
     depends_on:
       postgres-3:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - 8080:8080
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    env_file:
+      - .env
+    depends_on:
+      config-server:
         condition: service_healthy

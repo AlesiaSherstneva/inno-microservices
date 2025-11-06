@@ -1,5 +1,6 @@
 package com.innowise.securitystarter.jwt;
 
+import com.innowise.securitystarter.util.SecurityConstant;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,10 +16,8 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationWebMvcFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
-
-    private static final String BEARER_PREFIX = "Bearer ";
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -37,9 +36,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String resolveToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith(BEARER_PREFIX)) {
-            return bearerToken.substring(BEARER_PREFIX.length()).trim();
+        String bearerToken = request.getHeader(SecurityConstant.AUTH_HEADER);
+        if (bearerToken != null && bearerToken.startsWith(SecurityConstant.BEARER_PREFIX)) {
+            return bearerToken.substring(SecurityConstant.BEARER_PREFIX.length()).trim();
         }
         return null;
     }

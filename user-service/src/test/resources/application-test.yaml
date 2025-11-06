@@ -1,5 +1,11 @@
 spring:
+  cloud:
+    config:
+      enabled: false
   datasource:
+    url: jdbc:postgresql://localhost:5433/inno-test-users-db
+    username: test
+    password: test
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
