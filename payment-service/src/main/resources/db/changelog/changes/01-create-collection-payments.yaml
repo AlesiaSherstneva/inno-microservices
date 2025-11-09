@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: "01-1"
+      author: alesia.sharstniova@innowise.com
+      changes:
+        - runCommand:
+            command: |
+              {
+                "create": "payments",
+                "validator": {
+                  "$jsonSchema": {
+                    "bsonType": "object", 
+                    "required": ["order_id", "user_id", "status", "timestamp", "payment_amount"],
+                    "properties": {
+                      "order_id": { "bsonType": "long" },
+                      "user_id": { "bsonType": "long" },
+                      "status": { "bsonType": "string" },
+                      "timestamp": { "bsonType": "date" },
+                      "payment_amount": { "bsonType": "decimal" }
+                    }
+                  }
+                }
+              }
+  - changeSet:
+      id: "01-2"
+      author: alesia.sharstniova@innowise.com
+      changes:
+        - runCommand:
+            command: |
+              {
+                "createIndexes": "payments",
+                "indexes": [
+                  {
+                    "name": "idx_payments_order_id",
+                    "key": { "order_id": 1 }
+                  },
+                  {
+                    "name": "idx_payments_user_id", 
+                    "key": { "user_id": 1 }
+                  },
+                  {
+                    "name": "idx_payments_status",
+                    "key": { "status": 1 }
+                  }
+                ]
+              }

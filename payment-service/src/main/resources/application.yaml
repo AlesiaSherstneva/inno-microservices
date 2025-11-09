@@ -1,3 +1,8 @@
+server:
+  servlet:
+    context-path: ${SERVICES_COMMON_PATH}
+  port: 8084
+
 spring:
   application:
     name: payment-service
@@ -7,3 +12,8 @@ spring:
     import:
       - configserver:http://localhost:8888
       - file:.env[.properties]
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/inno-payment-db?authSource=admin
+      username: ${MONGO_USERNAME}
+      password: ${MONGO_PASSWORD}

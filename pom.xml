@@ -32,6 +32,7 @@
         <spring-cloud-dependencies.version>2025.0.0</spring-cloud-dependencies.version>
         <postgres.version>42.7.8</postgres.version>
         <liquibase.version>5.0.1</liquibase.version>
+        <commons-lang3.version>3.19.0</commons-lang3.version>
         <lombok.version>1.18.42</lombok.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <lombok-mapstruct.version>0.2.0</lombok-mapstruct.version>
@@ -79,6 +80,11 @@
                 <groupId>org.liquibase.ext</groupId>
                 <artifactId>liquibase-mongodb</artifactId>
                 <version>${liquibase.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
             </dependency>
 
             <dependency>
