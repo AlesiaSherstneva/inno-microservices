@@ -1,0 +1,15 @@
+server:
+  servlet:
+    context-path: ${SERVICES_COMMON_PATH}
+  port: 8084
+
+spring:
+  config:
+    activate:
+      on-profile: docker
+    import: configserver:http://config-server:8888
+  data:
+    mongodb:
+      uri: mongodb://payment-service-mongodb:27017/inno-payment-db?authSource=admin&retryWrites=true&w=majority
+      username: ${MONGO_USERNAME}
+      password: ${MONGO_PASSWORD}

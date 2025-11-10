@@ -80,6 +80,13 @@
                 <groupId>org.liquibase.ext</groupId>
                 <artifactId>liquibase-mongodb</artifactId>
                 <version>${liquibase.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.commons</groupId>
+                        <artifactId>commons-lang3</artifactId>
+                    </exclusion>
+                </exclusions>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
