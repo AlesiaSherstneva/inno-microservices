@@ -80,6 +80,25 @@ services:
       - ./volumes/redis/data:/data
     command: redis-server --appendonly yes
 
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka_cluster
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: controller,broker
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9091,CONTROLLER://0.0.0.0:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9091
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    ports:
+      - 9091:9091
+    volumes:
+      - ./volumes/kafka/data:/var/lib/kafka/data
+
   config-server:
     build:
       context: ./config-server
