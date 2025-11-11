@@ -6,6 +6,7 @@ import com.innowise.orderservice.model.dto.CustomerDto;
 import com.innowise.orderservice.model.dto.OrderItemRequestDto;
 import com.innowise.orderservice.model.dto.OrderRequestDto;
 import com.innowise.orderservice.model.dto.OrderResponseDto;
+import com.innowise.orderservice.model.dto.kafka.OrderCreatedEvent;
 import com.innowise.orderservice.model.dto.mapper.OrderMapper;
 import com.innowise.orderservice.model.entity.Order;
 import com.innowise.orderservice.model.entity.OrderItem;
@@ -15,6 +16,8 @@ import com.innowise.orderservice.repository.OrderRepository;
 import com.innowise.orderservice.service.OrderService;
 import com.innowise.orderservice.service.circuitbreaker.UserServiceCircuitBreaker;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,10 @@ public class OrderServiceImpl implements OrderService {
     private final ItemRepository itemRepository;
     private final OrderMapper orderMapper;
     private final UserServiceCircuitBreaker circuitBreaker;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    @Value("${orders.events.topic}")
+    private String ordersEventsTopic;
 
     @Override
     @Transactional(readOnly = true)
@@ -74,6 +81,10 @@ public class OrderServiceImpl implements OrderService {
                 .forEach(newOrder::addOrderItem);
 
         Order createdOrder = orderRepository.save(newOrder);
+
+        OrderCreatedEvent orderCreatedEvent = orderMapper.toEvent(createdOrder);
+        kafkaTemplate.send(ordersEventsTopic, orderCreatedEvent);
+
         CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(userId);
 
         return orderMapper.toDto(createdOrder, customer);

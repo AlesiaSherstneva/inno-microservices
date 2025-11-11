@@ -82,22 +82,27 @@ services:
 
   kafka:
     image: apache/kafka:latest
-    container_name: kafka_cluster
+    container_name: kafka
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: controller,broker
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9091,CONTROLLER://0.0.0.0:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9091
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LISTENERS: CONTROLLER://0.0.0.0:9093,INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
     ports:
-      - 9091:9091
+      - 9092:9092
+      - 9094:9094
     volumes:
       - ./volumes/kafka/data:/var/lib/kafka/data
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "nc -z kafka 9092 || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
 
   config-server:
     build:
@@ -163,6 +168,8 @@ services:
       postgres-3:
         condition: service_healthy
       config-server:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   payment-service:

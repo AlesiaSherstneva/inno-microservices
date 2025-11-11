@@ -8,7 +8,6 @@ spring:
     enabled: true
     change-log: db/changelog/db.changelog-master.yaml
   kafka:
-    bootstrap-servers: 9091
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -17,6 +16,15 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: com.innowise.*
+
+kafka:
+  topic:
+    properties:
+      partitions: 1
+      replication-factor: 1
+orders:
+  events:
+    topic: orders-events
 
 jwt:
   secret: myVerySecretKeyNotLessThan32CharactersLong
