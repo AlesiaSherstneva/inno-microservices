@@ -1,4 +1,4 @@
-package com.innowise.orderservice.model.dto.kafka;
+package com.innowise.paymentservice.model.dto.kafka;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

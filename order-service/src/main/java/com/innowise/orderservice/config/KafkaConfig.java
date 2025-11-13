@@ -27,7 +27,7 @@ public class KafkaConfig {
     }
 
     @Bean
-    NewTopic createProductsEventTopic() {
+    NewTopic createOrdersEventsTopic() {
         return TopicBuilder.name(ordersEventsTopic)
                 .partitions(partitions)
                 .replicas(replicationFactor)

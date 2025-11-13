@@ -11,5 +11,5 @@ package com.innowise.orderservice.model.entity.enums;
  * </p>
  */
 public enum OrderStatus {
-    NEW, PROCESSING, COMPLETED, CANCELLED
+    PROCESSING, COMPLETED, CANCELLED
 }

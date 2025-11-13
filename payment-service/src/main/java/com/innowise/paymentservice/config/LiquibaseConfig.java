@@ -15,12 +15,6 @@ public class LiquibaseConfig {
     @Value("${spring.data.mongodb.uri}")
     private String mongoDbUri;
 
-    @Value("${spring.data.mongodb.username}")
-    private String username;
-
-    @Value("${spring.data.mongodb.password}")
-    private String password;
-
     @Value("${spring.liquibase.change-log}")
     private String changeLog;
 
@@ -30,7 +24,7 @@ public class LiquibaseConfig {
         ResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor();
 
         MongoLiquibaseDatabase database = (MongoLiquibaseDatabase) DatabaseFactory.getInstance()
-                .openDatabase(mongoDbUri, username, password, null, resourceAccessor);
+                .openDatabase(mongoDbUri, null, null, null, resourceAccessor);
 
         Liquibase liquibase = new Liquibase(changeLog, resourceAccessor, database);
         liquibase.update("");

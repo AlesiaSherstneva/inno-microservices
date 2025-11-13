@@ -81,7 +81,7 @@ services:
     command: redis-server --appendonly yes
 
   kafka:
-    image: apache/kafka:latest
+    image: confluentinc/cp-kafka:latest
     container_name: kafka
     environment:
       KAFKA_NODE_ID: 1
@@ -92,13 +92,17 @@ services:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
     ports:
       - 9092:9092
       - 9094:9094
     volumes:
       - ./volumes/kafka/data:/var/lib/kafka/data
     healthcheck:
-      test: [ "CMD", "sh", "-c", "nc -z kafka 9092 || exit 1" ]
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list" ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -188,6 +192,8 @@ services:
         condition: service_healthy
       config-server:
         condition: service_healthy
+      order-service:
+        condition: service_started
 
   api-gateway:
     build:

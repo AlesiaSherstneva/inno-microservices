@@ -14,8 +14,7 @@ spring:
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: com.innowise.*
+      auto-offset-reset: latest
 
 kafka:
   topic:
@@ -25,6 +24,9 @@ kafka:
 orders:
   events:
     topic: orders-events
+payments:
+  events:
+    topic: payments-events
 
 jwt:
   secret: myVerySecretKeyNotLessThan32CharactersLong

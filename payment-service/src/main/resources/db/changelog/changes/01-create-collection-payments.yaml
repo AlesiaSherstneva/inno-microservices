@@ -32,7 +32,8 @@ databaseChangeLog:
                 "indexes": [
                   {
                     "name": "idx_payments_order_id",
-                    "key": { "order_id": 1 }
+                    "key": { "order_id": 1 },
+                    "unique": true
                   },
                   {
                     "name": "idx_payments_user_id", 
