@@ -82,10 +82,9 @@ public class OrderServiceImpl implements OrderService {
 
         Order createdOrder = orderRepository.save(newOrder);
 
-        OrderCreatedEvent orderCreatedEvent = orderMapper.toEvent(createdOrder);
-        kafkaTemplate.send(ordersEventsTopic, orderCreatedEvent);
+        sendEventToPaymentService(createdOrder);
 
-        CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(userId);
+        CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(createdOrder.getUserId());
 
         return orderMapper.toDto(createdOrder, customer);
     }
@@ -101,13 +100,20 @@ public class OrderServiceImpl implements OrderService {
             throw new AccessDeniedException("You don't have permission to access this order");
         }
 
+        if (orderToUpdate.getStatus().equals(OrderStatus.COMPLETED)) {
+            throw OrderStatusException.orderIsCompleted(orderId);
+        }
+
         orderToUpdate.getOrderItems().clear();
         orderRequestDto.getItems().stream()
                 .map(this::convertToOrderItem)
                 .forEach(orderToUpdate::addOrderItem);
 
         Order updatedOrder = orderRepository.save(orderToUpdate);
-        CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(userId);
+
+        sendEventToPaymentService(updatedOrder);
+
+        CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(updatedOrder.getUserId());
 
         return orderMapper.toDto(updatedOrder, customer);
     }
@@ -156,5 +162,10 @@ public class OrderServiceImpl implements OrderService {
         return userIds.isEmpty()
                 ? Collections.emptyMap()
                 : circuitBreaker.getCustomersInfoOrFallbackMap(userIds);
+    }
+
+    private void sendEventToPaymentService(Order persistedOrder) {
+        OrderCreatedEvent orderCreatedEvent = orderMapper.toEvent(persistedOrder);
+        kafkaTemplate.send(ordersEventsTopic, orderCreatedEvent);
     }
 }

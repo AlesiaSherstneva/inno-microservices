@@ -134,7 +134,7 @@ class OrderControllerTest {
                         jsonPath(TestConstant.JSON_PATH_ITEM_QUANTITY).value(TestConstant.ITEM_QUANTITY),
                         jsonPath(TestConstant.JSON_PATH_TOTAL_PRICE)
                                 .value(TestConstant.ITEM_PRICE.multiply(BigDecimal.valueOf(TestConstant.ITEM_QUANTITY))),
-                        jsonPath(TestConstant.JSON_PATH_STATUS).value(OrderStatus.NEW.name())
+                        jsonPath(TestConstant.JSON_PATH_STATUS).value(OrderStatus.PROCESSING.name())
                 );
     }
 
@@ -192,7 +192,7 @@ class OrderControllerTest {
                         jsonPath(TestConstant.JSON_PATH_ITEM_QUANTITY).value(TestConstant.ITEM_QUANTITY),
                         jsonPath(TestConstant.JSON_PATH_TOTAL_PRICE)
                                 .value(TestConstant.ITEM_PRICE.multiply(BigDecimal.valueOf(TestConstant.ITEM_QUANTITY))),
-                        jsonPath(TestConstant.JSON_PATH_STATUS).value(OrderStatus.NEW.name())
+                        jsonPath(TestConstant.JSON_PATH_STATUS).value(OrderStatus.PROCESSING.name())
                 );
     }
 
@@ -222,7 +222,7 @@ class OrderControllerTest {
                         jsonPath(TestConstant.JSON_PATH_ITEM_QUANTITY).value(TestConstant.ITEM_QUANTITY),
                         jsonPath(TestConstant.JSON_PATH_TOTAL_PRICE)
                                 .value(TestConstant.ITEM_PRICE.multiply(BigDecimal.valueOf(TestConstant.ITEM_QUANTITY))),
-                        jsonPath(TestConstant.JSON_PATH_STATUS).value(OrderStatus.NEW.name())
+                        jsonPath(TestConstant.JSON_PATH_STATUS).value(OrderStatus.PROCESSING.name())
                 );
     }
 
@@ -446,7 +446,7 @@ class OrderControllerTest {
                         jsonPath(TestConstant.JSON_PATH_ITEM_QUANTITY).value(TestConstant.ITEM_QUANTITY),
                         jsonPath(TestConstant.JSON_PATH_TOTAL_PRICE)
                                 .value(TestConstant.ITEM_PRICE.multiply(BigDecimal.valueOf(TestConstant.ITEM_QUANTITY))),
-                        jsonPath(TestConstant.JSON_PATH_STATUS).value(OrderStatus.NEW.name())
+                        jsonPath(TestConstant.JSON_PATH_STATUS).value(OrderStatus.PROCESSING.name())
                 );
     }
 
@@ -557,7 +557,7 @@ class OrderControllerTest {
                         jsonPath(TestConstant.JSON_PATH_ITEM_QUANTITY).value(TestConstant.ITEM_QUANTITY),
                         jsonPath(TestConstant.JSON_PATH_TOTAL_PRICE)
                                 .value(TestConstant.NEW_ITEM_PRICE.multiply(BigDecimal.valueOf(TestConstant.ITEM_QUANTITY))),
-                        jsonPath(TestConstant.JSON_PATH_STATUS).value(OrderStatus.NEW.name())
+                        jsonPath(TestConstant.JSON_PATH_STATUS).value(OrderStatus.PROCESSING.name())
                 );
     }
 

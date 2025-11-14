@@ -82,7 +82,7 @@ class OrderServiceTest {
         testOrder = Order.builder()
                 .id(TestConstant.LONG_ID)
                 .userId(TestConstant.LONG_ID)
-                .status(OrderStatus.NEW)
+                .status(OrderStatus.PROCESSING)
                 .creationDate(TestConstant.LOCAL_DATE_TIME_NOW)
                 .build();
         testItem = Item.builder()
@@ -197,7 +197,7 @@ class OrderServiceTest {
     @Test
     @WithMockUser(roles = TestConstant.ROLE_ADMIN_WITHOUT_PREFIX)
     void getOrdersByStatusesWhenOrderExistsTest() {
-        List<OrderStatus> requestStatuses = List.of(OrderStatus.NEW);
+        List<OrderStatus> requestStatuses = List.of(OrderStatus.PROCESSING);
 
         when(orderRepository.findOrdersByStatusIn(requestStatuses)).thenReturn(List.of(testOrder));
         when(circuitBreaker.getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS))
@@ -448,7 +448,7 @@ class OrderServiceTest {
         assertAll(
                 () -> assertThat(responseDto).isNotNull(),
                 () -> assertThat(responseDto.getCustomer()).isNotNull().isEqualTo(expectedCustomer),
-                () -> assertThat(responseDto.getStatus()).isNotNull().isEqualTo(OrderStatus.NEW)
+                () -> assertThat(responseDto.getStatus()).isNotNull().isEqualTo(OrderStatus.PROCESSING)
         );
 
         List<OrderItemResponseDto> receivedItems = responseDto.getItems();
