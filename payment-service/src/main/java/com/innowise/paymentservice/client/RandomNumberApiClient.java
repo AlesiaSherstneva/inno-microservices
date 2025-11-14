@@ -20,15 +20,19 @@ public class RandomNumberApiClient {
     private String externalApiUrl;
 
     public PaymentStatus determinePaymentStatus() {
-        int randomNumber;
+        return getRandomNumber() % 2 == 0 ? PaymentStatus.SUCCESS : PaymentStatus.FAILED;
+    }
 
+    private int getRandomNumber() {
         try {
-            randomNumber = restTemplate.getForObject(externalApiUrl, int.class);
+            int[] apiResponse = restTemplate.getForObject(externalApiUrl, int[].class);
+            if (apiResponse.length > 0) {
+                return apiResponse[0];
+            }
         } catch (Exception e) {
             log.warn("External API unavailable, using fallback random. Error: {}", e.getMessage());
-            randomNumber = fallbackRandom.nextInt(100) + 1;
         }
 
-        return randomNumber % 2 == 0 ? PaymentStatus.COMPLETED : PaymentStatus.FAILED;
+        return fallbackRandom.nextInt(100) + 1;
     }
 }

@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -15,7 +14,6 @@ import org.springframework.data.mongodb.core.mapping.FieldType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@ToString
 @Getter
 @Setter
 @Builder
@@ -37,7 +35,8 @@ public class Payment {
     private PaymentStatus status = PaymentStatus.PROCESSING;
 
     @Field(value = "timestamp")
-    private LocalDateTime timestamp;
+    @Builder.Default
+    private LocalDateTime timestamp = LocalDateTime.now();
 
     @Field(value = "payment_amount", targetType = FieldType.DECIMAL128)
     private BigDecimal paymentAmount;

@@ -6,5 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PaymentRepository extends MongoRepository<Payment, String> {
-    boolean existsByOrderId(Long orderId);
 }
