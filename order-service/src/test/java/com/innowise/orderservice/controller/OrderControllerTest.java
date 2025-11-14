@@ -23,6 +23,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -62,6 +63,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@EmbeddedKafka(topics = "${payments.events.topic}")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class OrderControllerTest {
     @Container
@@ -74,6 +76,7 @@ class OrderControllerTest {
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.cloud.openfeign.client.config.user-service.url",
                 () -> "http://localhost:%s/api/v1".formatted(userServiceMock.getPort()));
+        registry.add("spring.kafka.bootstrap-servers", () -> "${spring.embedded.kafka.brokers}");
     }
 
     @RegisterExtension
@@ -712,7 +715,7 @@ class OrderControllerTest {
                         status().isConflict(),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_STATUS).value(HttpStatus.CONFLICT.value()),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE)
-                                .value(containsString("Cannot cancel completed order with id")),
+                                .value(matchesPattern("Order with id \\d+ is already completed")),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_ERROR_MESSAGE)
                                 .value(containsString(String.valueOf(completedOrder.getId()))),
                         jsonPath(TestConstant.JSON_PATH_EXCEPTION_TIMESTAMP).exists()
@@ -747,6 +750,7 @@ class OrderControllerTest {
         private static Order buildOrder() {
             return Order.builder()
                     .userId(TestConstant.LONG_ID)
+                    .status(OrderStatus.PROCESSING)
                     .build();
         }
 

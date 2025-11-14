@@ -18,7 +18,6 @@ import com.innowise.orderservice.service.circuitbreaker.UserServiceCircuitBreake
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -95,10 +94,6 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponseDto updateOrder(Long orderId, OrderRequestDto orderRequestDto, Long userId) {
         Order orderToUpdate = orderRepository.findOrderById(orderId)
                 .orElseThrow(() -> ResourceNotFoundException.orderNotFound(orderId));
-
-        if (!orderToUpdate.getUserId().equals(userId)) {
-            throw new AccessDeniedException("You don't have permission to access this order");
-        }
 
         if (orderToUpdate.getStatus().equals(OrderStatus.COMPLETED)) {
             throw OrderStatusException.orderIsCompleted(orderId);

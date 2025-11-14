@@ -8,6 +8,7 @@ import com.innowise.orderservice.model.dto.OrderItemRequestDto;
 import com.innowise.orderservice.model.dto.OrderItemResponseDto;
 import com.innowise.orderservice.model.dto.OrderRequestDto;
 import com.innowise.orderservice.model.dto.OrderResponseDto;
+import com.innowise.orderservice.model.dto.kafka.OrderCreatedEvent;
 import com.innowise.orderservice.model.dto.mapper.OrderItemMapperImpl;
 import com.innowise.orderservice.model.dto.mapper.OrderMapperImpl;
 import com.innowise.orderservice.model.entity.Item;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
@@ -36,11 +38,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -63,6 +67,9 @@ class OrderServiceTest {
 
     @MockitoBean
     private UserServiceCircuitBreaker circuitBreaker;
+
+    @MockitoBean
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @Autowired
     private OrderService orderService;
@@ -234,6 +241,8 @@ class OrderServiceTest {
     void createOrderSuccessfulTest() {
         when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        when(kafkaTemplate.send(anyString(), any(OrderCreatedEvent.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
         when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(testCustomer);
 
         OrderResponseDto resultDto = orderService.createOrder(TestConstant.LONG_ID, testRequestDto);
@@ -263,6 +272,7 @@ class OrderServiceTest {
     void updateOrderWithNewItemTest() {
         Order orderInDb = Order.builder()
                 .userId(TestConstant.LONG_ID)
+                .status(OrderStatus.PROCESSING)
                 .orderItems(new ArrayList<>())
                 .build();
         orderInDb.getOrderItems().add(OrderItem.builder().build());
@@ -271,6 +281,8 @@ class OrderServiceTest {
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(orderInDb));
         when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        when(kafkaTemplate.send(anyString(), any(OrderCreatedEvent.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
         when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(testCustomer);
 
         OrderResponseDto resultDto = orderService.updateOrder(TestConstant.LONG_ID, testRequestDto, TestConstant.LONG_ID);
@@ -314,9 +326,31 @@ class OrderServiceTest {
 
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
+    void updateOrderWhenOrderIsCompletedTest() {
+        Order orderInDb = Order.builder()
+                .userId(TestConstant.LONG_ID)
+                .status(OrderStatus.COMPLETED)
+                .orderItems(new ArrayList<>())
+                .build();
+
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(true);
+        when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(orderInDb));
+
+        assertThatThrownBy(() -> orderService.updateOrder(TestConstant.LONG_ID, testRequestDto, TestConstant.LONG_ID))
+                .isInstanceOf(OrderStatusException.class)
+                .hasMessageMatching("Order with id \\d+ is already completed")
+                .hasMessageContaining(String.valueOf(TestConstant.LONG_ID));
+
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
+        verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
+    }
+
+    @Test
+    @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void updateOrderWhenItemNotFoundTest() {
         Order orderInDb = Order.builder()
                 .userId(TestConstant.LONG_ID)
+                .status(OrderStatus.PROCESSING)
                 .orderItems(new ArrayList<>())
                 .build();
         orderInDb.getOrderItems().add(OrderItem.builder().build());
@@ -394,7 +428,7 @@ class OrderServiceTest {
 
         assertThatThrownBy(() -> orderService.cancelOrderAsUser(TestConstant.LONG_ID, TestConstant.LONG_ID))
                 .isInstanceOf(OrderStatusException.class)
-                .hasMessageContaining("Cannot cancel completed order with id")
+                .hasMessageMatching("Order with id \\d+ is already completed")
                 .hasMessageContaining(String.valueOf(TestConstant.LONG_ID));
 
         verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
