@@ -9,6 +9,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+/**
+ * Producer for sending events to Kafka. Responsible for asynchronously publishing order creation events
+ * to the configured Kafka topic.
+ *
+ * @see OrderCreatedEvent
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -19,6 +25,11 @@ public class OrderEventProducer {
     @Value("${orders.events.topic}")
     private String ordersEventsTopic;
 
+    /**
+     * Asynchronously sends an order creation event to Kafka.
+     *
+     * @param createdOrder the Order entity that was successfully persisted and should be published as an event
+     */
     public void sendOrderEvent(Order createdOrder) {
         OrderCreatedEvent event = orderMapper.toEvent(createdOrder);
 

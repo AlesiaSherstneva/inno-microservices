@@ -12,6 +12,12 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+/**
+ * Kafka consumer component which handles order creation events and publishes the result back.
+ *
+ * @see OrderCreatedEvent
+ * @see PaymentProcessedEvent
+ */
 @Component
 @KafkaListener(topics = "${orders.events.topic}")
 @RequiredArgsConstructor
@@ -23,6 +29,11 @@ public class OrderCreatedEventHandler {
     @Value("${payments.events.topic}")
     private String paymentsEventsTopic;
 
+    /**
+     * Processes order creation events and initiates payment processing workflow.
+     *
+     * @param orderCreatedEvent the event received from Kafka
+     */
     @KafkaHandler
     public void handleOrderCreatedEvent(OrderCreatedEvent orderCreatedEvent) {
         Payment createdPayment = paymentService.createPayment(orderCreatedEvent);

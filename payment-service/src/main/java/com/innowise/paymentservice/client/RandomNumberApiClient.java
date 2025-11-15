@@ -9,6 +9,9 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Random;
 
+/**
+ * Client component for determining payment status using an external random number API.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -19,6 +22,12 @@ public class RandomNumberApiClient {
     @Value("${external-api.url}")
     private String externalApiUrl;
 
+    /**
+     * Determines the payment status based on a random number from external API.
+     *
+     * @return  {@link PaymentStatus#SUCCESS} if the number is even,
+     *          {@link PaymentStatus#FAILED} if the number is odd
+     */
     public PaymentStatus determinePaymentStatus() {
         return getRandomNumber() % 2 == 0 ? PaymentStatus.SUCCESS : PaymentStatus.FAILED;
     }

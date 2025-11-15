@@ -11,20 +11,31 @@ import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+/**
+ * Kafka consumer component which listens to the payment events topic and processes messages
+ * to update order statuses based on payment outcomes.
+ *
+ * @see PaymentProcessedEvent
+ */
 @Component
 @KafkaListener(topics = "${payments.events.topic}")
 @RequiredArgsConstructor
 public class PaymentProcessedEventHandler {
     private final OrderRepository orderRepository;
 
+    /**
+     * Processes payment result events and updates corresponding order status.
+     *
+     * @param paymentProcessedEvent the event received from Kafka
+     */
     @KafkaHandler
-    public void handlePaymentProcessedEvent(PaymentProcessedEvent event) {
-        Order order = orderRepository.findById(event.getOrderId())
-                .orElseThrow(() -> ResourceNotFoundException.orderNotFound(event.getOrderId()));
+    public void handlePaymentProcessedEvent(PaymentProcessedEvent paymentProcessedEvent) {
+        Order order = orderRepository.findById(paymentProcessedEvent.getOrderId())
+                .orElseThrow(() -> ResourceNotFoundException.orderNotFound(paymentProcessedEvent.getOrderId()));
 
-        if (event.getPaymentStatus().equals(Constant.PAYMENT_SERVICE_SUCCESS)) {
+        if (paymentProcessedEvent.getPaymentStatus().equals(Constant.PAYMENT_SERVICE_SUCCESS)) {
             order.setStatus(OrderStatus.COMPLETED);
-        } else if (event.getPaymentStatus().equals(Constant.PAYMENT_SERVICE_FAILED)) {
+        } else if (paymentProcessedEvent.getPaymentStatus().equals(Constant.PAYMENT_SERVICE_FAILED)) {
             order.setStatus(OrderStatus.PAYMENT_FAILED);
         }
 
