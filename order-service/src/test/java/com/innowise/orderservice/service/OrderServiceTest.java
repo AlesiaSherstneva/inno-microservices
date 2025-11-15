@@ -8,7 +8,6 @@ import com.innowise.orderservice.model.dto.OrderItemRequestDto;
 import com.innowise.orderservice.model.dto.OrderItemResponseDto;
 import com.innowise.orderservice.model.dto.OrderRequestDto;
 import com.innowise.orderservice.model.dto.OrderResponseDto;
-import com.innowise.orderservice.model.dto.kafka.OrderCreatedEvent;
 import com.innowise.orderservice.model.dto.mapper.OrderItemMapperImpl;
 import com.innowise.orderservice.model.dto.mapper.OrderMapperImpl;
 import com.innowise.orderservice.model.entity.Item;
@@ -19,13 +18,13 @@ import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
 import com.innowise.orderservice.service.circuitbreaker.UserServiceCircuitBreaker;
 import com.innowise.orderservice.service.impl.OrderServiceImpl;
+import com.innowise.orderservice.service.producer.OrderEventProducer;
 import com.innowise.orderservice.util.TestConstant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
@@ -38,13 +37,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -69,7 +67,7 @@ class OrderServiceTest {
     private UserServiceCircuitBreaker circuitBreaker;
 
     @MockitoBean
-    private KafkaTemplate<String, Object> kafkaTemplate;
+    private OrderEventProducer orderEventProducer;
 
     @Autowired
     private OrderService orderService;
@@ -241,8 +239,7 @@ class OrderServiceTest {
     void createOrderSuccessfulTest() {
         when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
-        when(kafkaTemplate.send(anyString(), any(OrderCreatedEvent.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
+        doNothing().when(orderEventProducer).sendOrderEvent(any(Order.class));
         when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(testCustomer);
 
         OrderResponseDto resultDto = orderService.createOrder(TestConstant.LONG_ID, testRequestDto);
@@ -251,6 +248,7 @@ class OrderServiceTest {
 
         verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
         verify(orderRepository, times(1)).save(any(Order.class));
+        verify(orderEventProducer, times(1)).sendOrderEvent(any(Order.class));
         verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
     }
 
@@ -281,8 +279,7 @@ class OrderServiceTest {
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(orderInDb));
         when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
-        when(kafkaTemplate.send(anyString(), any(OrderCreatedEvent.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
+        doNothing().when(orderEventProducer).sendOrderEvent(any(Order.class));
         when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(testCustomer);
 
         OrderResponseDto resultDto = orderService.updateOrder(TestConstant.LONG_ID, testRequestDto, TestConstant.LONG_ID);
@@ -293,6 +290,7 @@ class OrderServiceTest {
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
         verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
         verify(orderRepository, times(1)).save(any(Order.class));
+        verify(orderEventProducer, times(1)).sendOrderEvent(any(Order.class));
         verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
     }
 
@@ -475,7 +473,7 @@ class OrderServiceTest {
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(orderRepository, itemRepository, circuitBreaker);
+        verifyNoMoreInteractions(orderRepository, itemRepository, orderEventProducer, circuitBreaker);
     }
 
     private void assertOrderResponseDtoFields(OrderResponseDto responseDto, CustomerDto expectedCustomer) {
