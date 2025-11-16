@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - 'order-service/**'
+      - '.github/workflows/order-service.yml'
   pull_request:
     paths:
       - 'order-service/**'
+      - '.github/workflows/order-service.yml'
 
 env:
   SERVICE_DIR: order-service

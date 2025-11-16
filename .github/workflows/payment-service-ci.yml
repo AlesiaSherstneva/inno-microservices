@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - 'payment-service/**'
+      - '.github/workflows/payment-service.yml'
   pull_request:
     paths:
       - 'payment-service/**'
+      - '.github/workflows/payment-service.yml'
 
 env:
   SERVICE_DIR: payment-service
@@ -87,6 +89,7 @@ jobs:
           KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
           KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
           KAFKA_MIN_INSYNC_REPLICAS: 1
+          KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
         ports:
           - 9092:9092
           - 9094:9094
@@ -104,20 +107,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          mvn clean install -DskipTests
-
-      - name: Wait for MongoDB
-        run: |
-          echo "Waiting for MongoDB..."
-          timeout 60s bash -c 'until nc -z localhost 27017; do sleep 2; done'
-          echo "MongoDB is ready!"          
-
-      - name: Wait for Kafka
-        run: |
-          echo "Waiting for Kafka..."
-          sleep 45
-          timeout 30s bash -c 'until nc -z localhost 9092; do sleep 2; done'
-          echo "Kafka is ready!"          
+          mvn clean install -DskipTests  
 
       - name: Run integration tests
         run: |
@@ -125,7 +115,7 @@ jobs:
           mvn verify -DskipUnitTests
         env:
           SPRING_DATA_MONGODB_URI: mongodb://admin:admin@localhost:27017/payment_test_db?authSource=admin
-          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9094
 
   code-analysis:
     name: Code Analysis (SonarQube)

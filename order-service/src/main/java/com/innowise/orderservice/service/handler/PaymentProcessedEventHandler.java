@@ -9,7 +9,6 @@ import com.innowise.orderservice.util.Constant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 /**
@@ -30,7 +29,7 @@ public class PaymentProcessedEventHandler {
      * @param paymentProcessedEvent the event received from Kafka
      */
     @KafkaHandler
-    public void handlePaymentProcessedEvent(PaymentProcessedEvent paymentProcessedEvent, Acknowledgment ack) {
+    public void handlePaymentProcessedEvent(PaymentProcessedEvent paymentProcessedEvent) {
         Order order = orderRepository.findById(paymentProcessedEvent.getOrderId())
                 .orElseThrow(() -> ResourceNotFoundException.orderNotFound(paymentProcessedEvent.getOrderId()));
 
@@ -41,7 +40,5 @@ public class PaymentProcessedEventHandler {
         }
 
         orderRepository.save(order);
-
-        ack.acknowledge();
     }
 }

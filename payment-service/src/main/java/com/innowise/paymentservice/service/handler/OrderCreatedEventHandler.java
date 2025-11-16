@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 /**
@@ -36,9 +35,8 @@ public class OrderCreatedEventHandler {
      * @param orderCreatedEvent the event received from Kafka
      */
     @KafkaHandler
-    public void handleOrderCreatedEvent(OrderCreatedEvent orderCreatedEvent, Acknowledgment ack) {
+    public void handleOrderCreatedEvent(OrderCreatedEvent orderCreatedEvent) {
         Payment createdPayment = paymentService.createPayment(orderCreatedEvent);
-        ack.acknowledge();
 
         PaymentProcessedEvent paymentProcessedEvent = paymentMapper.toEvent(createdPayment);
         kafkaTemplate.send(paymentsEventsTopic, paymentProcessedEvent);
