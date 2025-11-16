@@ -34,7 +34,7 @@ import static org.awaitility.Awaitility.await;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @EmbeddedKafka(topics = "${payments.events.topic}")
 @SpringBootTest
-public class OrderKafkaIntegrationTest {
+class OrderKafkaIntegrationTest {
     @Container
     private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest");
 

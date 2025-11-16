@@ -36,7 +36,7 @@ import static org.awaitility.Awaitility.await;
 @ActiveProfiles("test")
 @EmbeddedKafka(topics = "${orders.events.topic}")
 @SpringBootTest
-public class PaymentKafkaIntegrationTest {
+class PaymentKafkaIntegrationTest {
     @Container
     private static final MongoDBContainer mongoDB = new MongoDBContainer("mongo:latest");
 

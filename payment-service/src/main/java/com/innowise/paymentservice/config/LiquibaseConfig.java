@@ -23,12 +23,13 @@ public class LiquibaseConfig {
     public Liquibase liquibase() throws Exception {
         ResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor();
 
-        MongoLiquibaseDatabase database = (MongoLiquibaseDatabase) DatabaseFactory.getInstance()
-                .openDatabase(mongoDbUri, null, null, null, resourceAccessor);
+        try (MongoLiquibaseDatabase database = (MongoLiquibaseDatabase) DatabaseFactory.getInstance()
+                .openDatabase(mongoDbUri, null, null, null, resourceAccessor)) {
 
-        Liquibase liquibase = new Liquibase(changeLog, resourceAccessor, database);
-        liquibase.update("");
+            Liquibase liquibase = new Liquibase(changeLog, resourceAccessor, database);
+            liquibase.update("");
 
-        return liquibase;
+            return liquibase;
+        }
     }
 }

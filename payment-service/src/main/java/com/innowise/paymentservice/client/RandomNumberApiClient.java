@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Random;
+import java.security.SecureRandom;
 
 /**
  * Client component for determining payment status using an external random number API.
@@ -17,7 +17,7 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class RandomNumberApiClient {
     private final RestTemplate restTemplate;
-    private final Random fallbackRandom = new Random();
+    private static final SecureRandom FALLBACK_RANDOM = new SecureRandom();
 
     @Value("${external-api.url}")
     private String externalApiUrl;
@@ -42,6 +42,6 @@ public class RandomNumberApiClient {
             log.warn("External API unavailable, using fallback random. Error: {}", e.getMessage());
         }
 
-        return fallbackRandom.nextInt(100) + 1;
+        return FALLBACK_RANDOM.nextInt(100) + 1;
     }
 }
