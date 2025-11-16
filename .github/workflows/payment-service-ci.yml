@@ -1,15 +1,15 @@
-name: UserService CI Pipeline
+name: PaymentService CI Pipeline
 
 on:
   push:
     paths:
-      - 'user-service/**'
+      - 'payment-service/**'
   pull_request:
     paths:
-      - 'user-service/**'
+      - 'payment-service/**'
 
 env:
-  SERVICE_DIR: user-service
+  SERVICE_DIR: payment-service
 
 jobs:
   build:
@@ -59,19 +59,37 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     services:
-      postgres:
-        image: postgres:latest
+      mongodb:
+        image: mongo:latest
         env:
-          POSTGRES_DB: user-test-db
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
+          MONGO_INITDB_DATABASE: inno-test-payment-db
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: admin
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432:5432
+          - 27017:27017
+      kafka:
+        image: confluentinc/cp-kafka:latest
+        env:
+          KAFKA_NODE_ID: 1
+          KAFKA_PROCESS_ROLES: controller,broker
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_LISTENERS: CONTROLLER://0.0.0.0:9093,INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+          KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+          KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+          KAFKA_MIN_INSYNC_REPLICAS: 1
+        ports:
+          - 9092:9092
+          - 9094:9094
 
     steps:
       - name: Checkout code
@@ -88,14 +106,26 @@ jobs:
         run: |
           mvn clean install -DskipTests
 
+      - name: Wait for MongoDB
+        run: |
+          echo "Waiting for MongoDB..."
+          timeout 60s bash -c 'until nc -z localhost 27017; do sleep 2; done'
+          echo "MongoDB is ready!"          
+
+      - name: Wait for Kafka
+        run: |
+          echo "Waiting for Kafka..."
+          sleep 45
+          timeout 30s bash -c 'until nc -z localhost 9092; do sleep 2; done'
+          echo "Kafka is ready!"          
+
       - name: Run integration tests
         run: |
           cd ${{ env.SERVICE_DIR }}
           mvn verify -DskipUnitTests
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/user-test-db
-          SPRING_DATASOURCE_USERNAME: test
-          SPRING_DATASOURCE_PASSWORD: test
+          SPRING_DATA_MONGODB_URI: mongodb://admin:admin@localhost:27017/payment_test_db?authSource=admin
+          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
 
   code-analysis:
     name: Code Analysis (SonarQube)
@@ -135,6 +165,8 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SPRING_DATA_MONGODB_URI: mongodb://admin:admin@localhost:27017/payment_test_db?authSource=admin
+          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
 
   build-docker-image:
     name: Build Docker Image
@@ -176,4 +208,4 @@ jobs:
           file: ${{ env.SERVICE_DIR }}/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/payment-service:latest
