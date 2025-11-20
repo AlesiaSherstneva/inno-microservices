@@ -16,6 +16,8 @@ import com.innowise.orderservice.service.OrderService;
 import com.innowise.orderservice.service.circuitbreaker.UserServiceCircuitBreaker;
 import com.innowise.orderservice.service.producer.OrderEventProducer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.KafkaException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
@@ -76,7 +79,13 @@ public class OrderServiceImpl implements OrderService {
 
         Order createdOrder = orderRepository.save(newOrder);
 
-        orderEventProducer.sendOrderEvent(createdOrder);
+        try {
+            orderEventProducer.sendOrderEvent(createdOrder);
+        } catch (KafkaException ex) {
+            log.error("Failed to send payment request for order with id {}: {}", createdOrder.getId(), ex.getMessage());
+
+            throw ex;
+        }
 
         CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(userId);
 
@@ -101,7 +110,13 @@ public class OrderServiceImpl implements OrderService {
 
         Order updatedOrder = orderRepository.save(orderToUpdate);
 
-        orderEventProducer.sendOrderEvent(updatedOrder);
+        try {
+            orderEventProducer.sendOrderEvent(updatedOrder);
+        } catch (KafkaException ex) {
+            log.error("Failed to send payment request for order with id {}: {}", orderId, ex.getMessage());
+
+            throw ex;
+        }
 
         CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(userId);
 

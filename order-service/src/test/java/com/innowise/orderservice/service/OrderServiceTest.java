@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.KafkaException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
@@ -43,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -267,6 +269,22 @@ class OrderServiceTest {
 
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
+    void createOrderWhenKafkaIsUnavailableTest() {
+        when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
+        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        doThrow(new KafkaException("Kafka is unavailable")).when(orderEventProducer).sendOrderEvent(testOrder);
+
+        assertThatThrownBy(() -> orderService.createOrder(TestConstant.LONG_ID, testRequestDto))
+                .isInstanceOf(KafkaException.class)
+                .hasMessageContaining("Kafka is unavailable");
+
+        verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
+        verify(orderRepository, times(1)).save(any(Order.class));
+        verify(orderEventProducer, times(1)).sendOrderEvent(any(Order.class));
+    }
+
+    @Test
+    @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void updateOrderWithNewItemTest() {
         Order orderInDb = Order.builder()
                 .userId(TestConstant.LONG_ID)
@@ -365,6 +383,33 @@ class OrderServiceTest {
         verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
         verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
+    }
+
+    @Test
+    @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
+    void updateOrderWhenKafkaIsUnavailableTest() {
+        Order orderInDb = Order.builder()
+                .userId(TestConstant.LONG_ID)
+                .status(OrderStatus.PROCESSING)
+                .orderItems(new ArrayList<>())
+                .build();
+        orderInDb.getOrderItems().add(OrderItem.builder().build());
+
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(true);
+        when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(orderInDb));
+        when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
+        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        doThrow(new KafkaException("Kafka is unavailable")).when(orderEventProducer).sendOrderEvent(testOrder);
+
+        assertThatThrownBy(() -> orderService.updateOrder(TestConstant.LONG_ID, testRequestDto, TestConstant.LONG_ID))
+                .isInstanceOf(KafkaException.class)
+                .hasMessageContaining("Kafka is unavailable");
+
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
+        verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
+        verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
+        verify(orderRepository, times(1)).save(any(Order.class));
+        verify(orderEventProducer, times(1)).sendOrderEvent(any(Order.class));
     }
 
     @Test
