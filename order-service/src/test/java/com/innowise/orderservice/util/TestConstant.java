@@ -18,9 +18,6 @@ public class TestConstant {
     public static final String NEW_ITEM_NAME = "New Product";
     public static final BigDecimal NEW_ITEM_PRICE = BigDecimal.valueOf(33.33);
 
-    public static final String PAYMENT_SERVICE_SUCCESS = "SUCCESS";
-    public static final String PAYMENT_SERVICE_FAILED = "FAILED";
-
     public static final String ROLE_USER_WITH_PREFIX = "ROLE_USER";
     public static final String ROLE_USER_WITHOUT_PREFIX = "USER";
     public static final String ROLE_ADMIN_WITH_PREFIX = "ROLE_ADMIN";

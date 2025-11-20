@@ -1,6 +1,6 @@
 package com.innowise.orderservice.model.dto.kafka;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.innowise.orderservice.model.dto.kafka.enums.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,8 +21,6 @@ public class PaymentProcessedEvent {
 
     /**
      * Result of the payment processing attempt. Serialized as "status" in JSON format.
-     * Expected values: "SUCCESS", "FAILED".
      */
-    @JsonProperty("status")
-    private String paymentStatus;
+    private PaymentStatus paymentStatus;
 }

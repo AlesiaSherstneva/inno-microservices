@@ -2,10 +2,10 @@ package com.innowise.orderservice.service.handler;
 
 import com.innowise.orderservice.exception.ResourceNotFoundException;
 import com.innowise.orderservice.model.dto.kafka.PaymentProcessedEvent;
+import com.innowise.orderservice.model.dto.kafka.enums.PaymentStatus;
 import com.innowise.orderservice.model.entity.Order;
 import com.innowise.orderservice.model.entity.enums.OrderStatus;
 import com.innowise.orderservice.repository.OrderRepository;
-import com.innowise.orderservice.util.Constant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -33,9 +33,9 @@ public class PaymentProcessedEventHandler {
         Order order = orderRepository.findById(paymentProcessedEvent.getOrderId())
                 .orElseThrow(() -> ResourceNotFoundException.orderNotFound(paymentProcessedEvent.getOrderId()));
 
-        if (paymentProcessedEvent.getPaymentStatus().equals(Constant.PAYMENT_SERVICE_SUCCESS)) {
+        if (paymentProcessedEvent.getPaymentStatus().equals(PaymentStatus.SUCCESS)) {
             order.setStatus(OrderStatus.COMPLETED);
-        } else if (paymentProcessedEvent.getPaymentStatus().equals(Constant.PAYMENT_SERVICE_FAILED)) {
+        } else if (paymentProcessedEvent.getPaymentStatus().equals(PaymentStatus.FAILED)) {
             order.setStatus(OrderStatus.PAYMENT_FAILED);
         }
 
