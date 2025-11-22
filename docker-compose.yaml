@@ -52,20 +52,109 @@ services:
     volumes:
       - ./volumes/order-postgres/data:/var/lib/postgresql/data
 
-  mongodb:
+  mongo-1:
     image: mongo:latest
-    container_name: payment-service-mongodb
+    container_name: mongo-1
     environment:
       MONGO_INITDB_DATABASE: inno-payment-db
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_KEY: ${MONGO_KEY}
     ports:
       - 27017:27017
     volumes:
-      - ./volumes/payment-mongodb/data:/data/db
+      - ./volumes/mongo/replica-1/data:/data/db
+    command: >
+      sh -c "
+        if [ ! -f /data/db/mongo.key ]; then
+          echo ${MONGO_KEY} > /data/db/mongo.key &&
+          chmod 400 /data/db/mongo.key;
+        fi &&
+
+        docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/db/mongo.key --auth &
+      
+        echo 'Waiting for mongodb1 to be ready...';
+        until mongosh --host localhost --port 27017 --eval 'db.adminCommand(\"ping\")' > /dev/null 2>&1; do sleep 1; done;
+
+        echo 'Waiting for other nodes to be ready...';
+        until mongosh --host mongo-2 --port 27017 --eval 'db.adminCommand(\"ping\")' > /dev/null 2>&1; do sleep 1; done;
+        until mongosh --host mongo-3 --port 27017 --eval 'db.adminCommand(\"ping\")' > /dev/null 2>&1; do sleep 1; done;
+
+        echo 'Initiating replica set...';
+        mongosh --host localhost -u admin -p admin --authenticationDatabase admin --eval '
+          rs.initiate({
+            _id: \"rs0\",
+            members: [
+              { _id: 0, host: \"mongo-1:27017\", priority: 2},
+              { _id: 1, host: \"mongo-2:27017\", priority: 1},
+              { _id: 2, host: \"mongo-3:27017\", priority: 1}
+            ]
+          });
+        ';
+
+        wait
+      "
     healthcheck:
-      test: [ "CMD-SHELL", "mongosh --eval \"db.adminCommand('ping')\" inno-payment-db -u admin -p 
-              admin --authenticationDatabase admin --quiet" ]
+      test: [ "CMD-SHELL", "mongosh --eval \"db.adminCommand('ping')\" admin -u admin 
+              -p admin --authenticationDatabase admin --quiet" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mongo-2:
+    image: mongo:latest
+    container_name: mongo-2
+    environment:
+      MONGO_INITDB_DATABASE: inno-payment-db
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_KEY: ${MONGO_KEY}
+    volumes:
+      - ./volumes/mongo/replica-2/data:/data/db
+    ports:
+      - 27018:27017
+    command: >
+      sh -c "
+        if [ ! -f /data/db/mongo.key ]; then
+          echo ${MONGO_KEY} > /data/db/mongo.key &&
+          chmod 400 /data/db/mongo.key;
+        fi &&
+      
+        exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/db/mongo.key --auth
+      "
+    healthcheck:
+      test: [ "CMD-SHELL", "mongosh --eval \"db.adminCommand('ping')\" admin -u admin 
+              -p admin --authenticationDatabase admin --quiet" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mongo-3:
+    image: mongo:latest
+    container_name: mongo-3
+    environment:
+      MONGO_INITDB_DATABASE: inno-payment-db
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_KEY: ${MONGO_KEY}
+    volumes:
+      - ./volumes/mongo/replica-3/data:/data/db
+    ports:
+      - 27019:27017
+    command: >
+      sh -c "
+        if [ ! -f /data/db/mongo.key ]; then
+          echo ${MONGO_KEY} > /data/db/mongo.key &&
+          chmod 400 /data/db/mongo.key;
+        fi &&
+      
+        exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/db/mongo.key --auth
+      "
+    healthcheck:
+      test: [ "CMD-SHELL", "mongosh --eval \"db.adminCommand('ping')\" admin -u admin 
+              -p admin --authenticationDatabase admin --quiet" ]
       interval: 10s
       timeout: 10s
       retries: 3
@@ -188,7 +277,7 @@ services:
     env_file:
       - .env
     depends_on:
-      mongodb:
+      mongo-1:
         condition: service_healthy
       config-server:
         condition: service_healthy

@@ -18,7 +18,7 @@ spring:
         spring.json.value.default.type: com.innowise.paymentservice.model.dto.kafka.OrderCreatedEvent
   data:
     mongodb:
-      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@payment-service-mongodb:27017/inno-payment-db?authSource=admin
+      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongo-1:27017,mongo-2:27017,mongo-3:27017/inno-payment-db?authSource=admin&replicaSet=rs0
 
 external-api:
   url: "https://www.randomnumberapi.com/api/v1.0/random?min=1&max=100&count=1"
