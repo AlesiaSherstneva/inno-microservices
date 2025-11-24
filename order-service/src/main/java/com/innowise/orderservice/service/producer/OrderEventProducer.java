@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Producer for sending events to Kafka. Responsible for synchronously publishing order creation events
+ * Producer for sending events to Kafka. Responsible for asynchronously publishing order creation events
  * to the configured Kafka topic.
  *
  * @see OrderCreatedEvent
@@ -29,7 +29,7 @@ public class OrderEventProducer {
     private String ordersEventsTopic;
 
     /**
-     * Synchronously sends an order creation event to Kafka.
+     * Asynchronously sends an order creation event to Kafka.
      * Blocks until confirmation or timeout/error, throwing an exception if failed.
      *
      * @param createdOrder the Order entity that was successfully persisted and should be published as an event
@@ -42,7 +42,7 @@ public class OrderEventProducer {
 
             log.info("Payment request for order with id {} has been sent successfully", createdOrder.getId());
         } catch (ExecutionException | InterruptedException ex) {
-            throw new KafkaException("Order creation failed. Payment service is temporarily unavailable.", ex);
+            throw new KafkaException("Payment service is temporarily unavailable.", ex);
         }
     }
 }

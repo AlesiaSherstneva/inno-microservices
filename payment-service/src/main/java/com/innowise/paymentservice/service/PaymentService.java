@@ -17,7 +17,6 @@ public interface PaymentService {
      * Creates and processes a payment based on an order creation event and external API-service.
      *
      * @param event the order creation event containing payment details
-     * @return the created {@link Payment} entity with determined status
      */
-    Payment createPayment(OrderCreatedEvent event);
+    void createPayment(OrderCreatedEvent event);
 }

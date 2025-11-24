@@ -22,8 +22,13 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       auto-offset-reset: latest
       enable-auto-commit: false
-      listener:
-        ack-mode: manual_immediate
+    listener:
+      missing-topics-fatal: false
+      ack-mode: record
+      retry:
+        topic:
+          attempts: 5
+          delay: 2000
 
 kafka:
   topic:
