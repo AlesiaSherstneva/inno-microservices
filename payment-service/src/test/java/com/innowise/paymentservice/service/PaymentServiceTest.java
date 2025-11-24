@@ -62,11 +62,13 @@ class PaymentServiceTest {
 
     @Test
     void createPaymentWithSuccessStatusTest() {
+        when(paymentRepository.existsByOrderIdAndStatus(TestConstants.ID, PaymentStatus.SUCCESS)).thenReturn(false);
         when(randomNumberApiClient.determinePaymentStatus()).thenReturn(PaymentStatus.SUCCESS);
         when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
 
         paymentService.createPayment(testOrderCreatedEvent);
 
+        verify(paymentRepository, times(1)).existsByOrderIdAndStatus(TestConstants.ID, PaymentStatus.SUCCESS);
         verify(randomNumberApiClient, times(1)).determinePaymentStatus();
         verify(paymentRepository, times(1)).save(any(Payment.class));
         verify(paymentEventProducer, times(1)).sendPaymentProcessedEvent(any(Payment.class));
@@ -74,18 +76,30 @@ class PaymentServiceTest {
 
     @Test
     void createPaymentWithFailedStatusTest() {
+        when(paymentRepository.existsByOrderIdAndStatus(TestConstants.ID, PaymentStatus.SUCCESS)).thenReturn(false);
         when(randomNumberApiClient.determinePaymentStatus()).thenReturn(PaymentStatus.FAILED);
         when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
 
         paymentService.createPayment(testOrderCreatedEvent);
 
+        verify(paymentRepository, times(1)).existsByOrderIdAndStatus(TestConstants.ID, PaymentStatus.SUCCESS);
         verify(randomNumberApiClient, times(1)).determinePaymentStatus();
         verify(paymentRepository, times(1)).save(any(Payment.class));
         verify(paymentEventProducer, times(1)).sendPaymentProcessedEvent(any(Payment.class));
     }
 
     @Test
+    void createPaymentWhenExistsByOrderIdTest() {
+        when(paymentRepository.existsByOrderIdAndStatus(TestConstants.ID, PaymentStatus.SUCCESS)).thenReturn(true);
+
+        paymentService.createPayment(testOrderCreatedEvent);
+
+        verify(paymentRepository, times(1)).existsByOrderIdAndStatus(TestConstants.ID, PaymentStatus.SUCCESS);
+    }
+
+    @Test
     void createPaymentWhenKafkaThrewExceptionTest() {
+        when(paymentRepository.existsByOrderIdAndStatus(TestConstants.ID, PaymentStatus.SUCCESS)).thenReturn(false);
         when(randomNumberApiClient.determinePaymentStatus()).thenReturn(PaymentStatus.FAILED);
         when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
         doThrow(new KafkaException("Kafka is unavailable")).when(paymentEventProducer).sendPaymentProcessedEvent(testPayment);
@@ -94,6 +108,7 @@ class PaymentServiceTest {
                 .isInstanceOf(KafkaException.class)
                 .hasMessageContaining("Kafka is unavailable");
 
+        verify(paymentRepository, times(1)).existsByOrderIdAndStatus(TestConstants.ID, PaymentStatus.SUCCESS);
         verify(randomNumberApiClient, times(1)).determinePaymentStatus();
         verify(paymentRepository, times(1)).save(any(Payment.class));
         verify(paymentEventProducer, times(1)).sendPaymentProcessedEvent(any(Payment.class));
