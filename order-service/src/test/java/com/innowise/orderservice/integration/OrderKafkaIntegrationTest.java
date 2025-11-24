@@ -2,10 +2,10 @@ package com.innowise.orderservice.integration;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.innowise.orderservice.model.dto.kafka.PaymentProcessedEvent;
-import com.innowise.orderservice.model.dto.kafka.enums.PaymentStatus;
 import com.innowise.orderservice.model.entity.Order;
 import com.innowise.orderservice.model.entity.enums.OrderStatus;
 import com.innowise.orderservice.repository.OrderRepository;
+import com.innowise.orderservice.util.TestConstant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,7 +81,7 @@ class OrderKafkaIntegrationTest {
     void paymentSuccessfulKafkaEventReceivedIntegrationTest() {
         PaymentProcessedEvent event = PaymentProcessedEvent.builder()
                 .orderId(orderInDb.getId())
-                .paymentStatus(PaymentStatus.SUCCESS)
+                .paymentStatus(TestConstant.PAYMENT_STATUS_SUCCESS)
                 .build();
 
         kafkaTemplate.send(paymentsEventsTopic, event);
@@ -97,7 +97,7 @@ class OrderKafkaIntegrationTest {
     void paymentFailedKafkaEventReceivedIntegrationTest() {
         PaymentProcessedEvent event = PaymentProcessedEvent.builder()
                 .orderId(orderInDb.getId())
-                .paymentStatus(PaymentStatus.FAILED)
+                .paymentStatus(TestConstant.PAYMENT_STATUS_FAILED)
                 .build();
 
         kafkaTemplate.send(paymentsEventsTopic, event);
