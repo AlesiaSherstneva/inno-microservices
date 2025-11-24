@@ -4,6 +4,8 @@ import com.innowise.paymentservice.model.entity.enums.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -14,6 +16,7 @@ import java.security.SecureRandom;
  */
 @Slf4j
 @Component
+@EnableRetry
 @RequiredArgsConstructor
 public class RandomNumberApiClient {
     private final RestTemplate restTemplate;
@@ -29,19 +32,27 @@ public class RandomNumberApiClient {
      *          {@link PaymentStatus#FAILED} if the number is odd
      */
     public PaymentStatus determinePaymentStatus() {
-        return getRandomNumber() % 2 == 0 ? PaymentStatus.SUCCESS : PaymentStatus.FAILED;
-    }
+        int randomNumber;
 
-    private int getRandomNumber() {
         try {
-            int[] apiResponse = restTemplate.getForObject(externalApiUrl, int[].class);
-            if (apiResponse.length > 0) {
-                return apiResponse[0];
-            }
+            randomNumber = getRandomNumber();
         } catch (Exception e) {
             log.warn("External API unavailable, using fallback random. Error: {}", e.getMessage());
+
+            randomNumber = FALLBACK_RANDOM.nextInt(100) + 1;
         }
 
-        return FALLBACK_RANDOM.nextInt(100) + 1;
+        return randomNumber % 2 == 0 ? PaymentStatus.SUCCESS : PaymentStatus.FAILED;
+    }
+
+    @Retryable(retryFor = Exception.class, maxAttempts = 5)
+    private int getRandomNumber() {
+        int[] apiResponse = restTemplate.getForObject(externalApiUrl, int[].class);
+
+        if (apiResponse.length == 0) {
+            throw new IllegalStateException("Empty API response");
+        }
+
+        return apiResponse[0];
     }
 }
