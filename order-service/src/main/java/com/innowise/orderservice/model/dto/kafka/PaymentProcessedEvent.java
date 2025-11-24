@@ -1,6 +1,8 @@
 package com.innowise.orderservice.model.dto.kafka;
 
 import com.innowise.orderservice.model.dto.kafka.enums.PaymentStatus;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,10 +19,13 @@ public class PaymentProcessedEvent {
     /**
      * Unique identifier of the order associated with the payment.
      */
+    @NotNull(message = "Order id is required")
+    @Positive(message = "Order id must be positive")
     private Long orderId;
 
     /**
      * Result of the payment processing attempt. Serialized as "status" in JSON format.
      */
+    @NotNull(message = "Payment status is required")
     private PaymentStatus paymentStatus;
 }
