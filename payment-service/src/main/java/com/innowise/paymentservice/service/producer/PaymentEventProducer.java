@@ -42,8 +42,11 @@ public class PaymentEventProducer {
 
             log.info("Payment response for order id {} has been sent successfully with id: {}",
                     createdPayment.getOrderId(), createdPayment.getId());
-        } catch (ExecutionException | InterruptedException ex) {
+        } catch (ExecutionException | RuntimeException ex) {
             throw new KafkaException("Fatal error during Kafka send operation.", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new KafkaException("Thread interrupted during Kafka send operation.", ex);
         }
     }
 }

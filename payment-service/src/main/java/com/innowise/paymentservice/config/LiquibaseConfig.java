@@ -2,6 +2,7 @@ package com.innowise.paymentservice.config;
 
 import liquibase.Liquibase;
 import liquibase.database.DatabaseFactory;
+import liquibase.exception.LiquibaseException;
 import liquibase.ext.mongodb.database.MongoLiquibaseDatabase;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.resource.ResourceAccessor;
@@ -20,7 +21,7 @@ public class LiquibaseConfig {
 
     @Bean
     @DependsOn("mongoTemplate")
-    public Liquibase liquibase() throws Exception {
+    public Liquibase liquibase() throws LiquibaseException {
         ResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor();
 
         try (MongoLiquibaseDatabase database = (MongoLiquibaseDatabase) DatabaseFactory.getInstance()
