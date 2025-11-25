@@ -46,6 +46,7 @@ public class PaymentEventProducer {
             throw new KafkaException("Fatal error during Kafka send operation.", ex);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
+
             throw new KafkaException("Thread interrupted during Kafka send operation.", ex);
         }
     }
