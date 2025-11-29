@@ -10,13 +10,13 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - 5433:5432
+    volumes:
+      - ./volumes/user-postgres/data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d inno-db" ]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d inno-users-db" ]
       interval: 5s
       timeout: 5s
       retries: 5
-    volumes:
-      - ./volumes/user-postgres/data:/var/lib/postgresql/data
 
   postgres-2:
     image: postgres:15-alpine
@@ -27,13 +27,13 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - 5434:5432
+    volumes:
+      - ./volumes/auth-postgres/data:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d inno-auth-db" ]
       interval: 5s
       timeout: 5s
       retries: 5
-    volumes:
-      - ./volumes/auth-postgres/data:/var/lib/postgresql/data
 
   postgres-3:
     image: postgres:15-alpine
@@ -44,13 +44,13 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - 5435:5432
+    volumes:
+      - ./volumes/order-postgres/data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d inno-db" ]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d inno-orders-db" ]
       interval: 5s
       timeout: 5s
       retries: 5
-    volumes:
-      - ./volumes/order-postgres/data:/var/lib/postgresql/data
 
   mongo-1:
     image: mongo:latest
@@ -70,10 +70,12 @@ services:
           echo ${MONGO_KEY} > /data/db/mongo.key &&
           chmod 400 /data/db/mongo.key;
         fi &&
+      
+        chmod -R 755 /data/db/.mongodb/mongosh/ || true
 
         docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/db/mongo.key --auth &
       
-        echo 'Waiting for mongodb1 to be ready...';
+        echo 'Waiting for mongo-1 to be ready...';
         until mongosh --host localhost --port 27017 --eval 'db.adminCommand(\"ping\")' > /dev/null 2>&1; do sleep 1; done;
 
         echo 'Waiting for other nodes to be ready...';
@@ -82,14 +84,16 @@ services:
 
         echo 'Initiating replica set...';
         mongosh --host localhost -u admin -p admin --authenticationDatabase admin --eval '
-          rs.initiate({
-            _id: \"rs0\",
-            members: [
-              { _id: 0, host: \"mongo-1:27017\", priority: 2},
-              { _id: 1, host: \"mongo-2:27017\", priority: 1},
-              { _id: 2, host: \"mongo-3:27017\", priority: 1}
-            ]
-          });
+          db.adminCommand({
+            "replSetInitiate": {
+              "_id": "rs0",
+              "members": [
+                { "_id": 0, "host": "mongo-1:27017", "priority": 2 },
+                { "_id": 1, "host": "mongo-2:27017", "priority": 1 },
+                { "_id": 2, "host": "mongo-3:27017", "priority": 1 }
+              ]
+            }
+          })
         ';
 
         wait
@@ -110,16 +114,18 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin
       MONGO_KEY: ${MONGO_KEY}
-    volumes:
-      - ./volumes/mongo/replica-2/data:/data/db
     ports:
       - 27018:27017
+    volumes:
+      - ./volumes/mongo/replica-2/data:/data/db
     command: >
       sh -c "
         if [ ! -f /data/db/mongo.key ]; then
           echo ${MONGO_KEY} > /data/db/mongo.key &&
           chmod 400 /data/db/mongo.key;
         fi &&
+      
+        chmod -R 755 /data/db/.mongodb/mongosh/ || true
       
         exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/db/mongo.key --auth
       "
@@ -139,16 +145,18 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin
       MONGO_KEY: ${MONGO_KEY}
-    volumes:
-      - ./volumes/mongo/replica-3/data:/data/db
     ports:
       - 27019:27017
+    volumes:
+      - ./volumes/mongo/replica-3/data:/data/db
     command: >
       sh -c "
         if [ ! -f /data/db/mongo.key ]; then
           echo ${MONGO_KEY} > /data/db/mongo.key &&
           chmod 400 /data/db/mongo.key;
         fi &&
+      
+        chmod -R 755 /data/db/.mongodb/mongosh/ || true
       
         exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/db/mongo.key --auth
       "
@@ -162,7 +170,7 @@ services:
 
   redis:
     image: redis:latest
-    container_name: user-service-redis
+    container_name: redis
     ports:
       - 6379:6379
     volumes:
