@@ -15,6 +15,6 @@ public class OrderStatusException extends RuntimeException {
     }
 
     public static OrderStatusException orderIsCompleted(Long id) {
-        return new OrderStatusException("Cannot cancel completed order with id: %d".formatted(id));
+        return new OrderStatusException("Order with id %d is already completed".formatted(id));
     }
 }

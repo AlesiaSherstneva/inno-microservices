@@ -6,6 +6,7 @@ import com.innowise.orderservice.model.dto.ErrorResponseDto;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.KafkaException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -83,6 +84,16 @@ public class GlobalControllerAdvice {
                 .build();
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
+    @ExceptionHandler(KafkaException.class)
+    public ResponseEntity<ErrorResponseDto> handleKafkaException(KafkaException ex) {
+        ErrorResponseDto errorResponse = ErrorResponseDto.builder()
+                .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+                .errorMessage(ex.getMessage())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)

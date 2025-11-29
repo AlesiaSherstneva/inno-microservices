@@ -15,6 +15,9 @@ public class TestConstant {
     public static final BigDecimal ITEM_PRICE = BigDecimal.valueOf(99.99);
     public static final Integer ITEM_QUANTITY = 3;
 
+    public static final String PAYMENT_STATUS_SUCCESS = "SUCCESS";
+    public static final String PAYMENT_STATUS_FAILED = "FAILED";
+
     public static final String NEW_ITEM_NAME = "New Product";
     public static final BigDecimal NEW_ITEM_PRICE = BigDecimal.valueOf(33.33);
 

@@ -14,8 +14,10 @@ import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
 import com.innowise.orderservice.service.OrderService;
 import com.innowise.orderservice.service.circuitbreaker.UserServiceCircuitBreaker;
+import com.innowise.orderservice.service.producer.OrderEventProducer;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.KafkaException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
@@ -31,6 +34,7 @@ public class OrderServiceImpl implements OrderService {
     private final ItemRepository itemRepository;
     private final OrderMapper orderMapper;
     private final UserServiceCircuitBreaker circuitBreaker;
+    private final OrderEventProducer orderEventProducer;
 
     @Override
     @Transactional(readOnly = true)
@@ -74,6 +78,15 @@ public class OrderServiceImpl implements OrderService {
                 .forEach(newOrder::addOrderItem);
 
         Order createdOrder = orderRepository.save(newOrder);
+
+        try {
+            orderEventProducer.sendOrderEvent(createdOrder);
+        } catch (KafkaException ex) {
+            log.error("Failed to send payment request for order with id {}: {}", createdOrder.getId(), ex.getMessage());
+
+            throw ex;
+        }
+
         CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(userId);
 
         return orderMapper.toDto(createdOrder, customer);
@@ -86,8 +99,8 @@ public class OrderServiceImpl implements OrderService {
         Order orderToUpdate = orderRepository.findOrderById(orderId)
                 .orElseThrow(() -> ResourceNotFoundException.orderNotFound(orderId));
 
-        if (!orderToUpdate.getUserId().equals(userId)) {
-            throw new AccessDeniedException("You don't have permission to access this order");
+        if (orderToUpdate.getStatus().equals(OrderStatus.COMPLETED)) {
+            throw OrderStatusException.orderIsCompleted(orderId);
         }
 
         orderToUpdate.getOrderItems().clear();
@@ -96,6 +109,15 @@ public class OrderServiceImpl implements OrderService {
                 .forEach(orderToUpdate::addOrderItem);
 
         Order updatedOrder = orderRepository.save(orderToUpdate);
+
+        try {
+            orderEventProducer.sendOrderEvent(updatedOrder);
+        } catch (KafkaException ex) {
+            log.error("Failed to send payment request for order with id {}: {}", orderId, ex.getMessage());
+
+            throw ex;
+        }
+
         CustomerDto customer = circuitBreaker.getCustomerInfoOrFallback(userId);
 
         return orderMapper.toDto(updatedOrder, customer);

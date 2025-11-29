@@ -18,12 +18,14 @@ import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
 import com.innowise.orderservice.service.circuitbreaker.UserServiceCircuitBreaker;
 import com.innowise.orderservice.service.impl.OrderServiceImpl;
+import com.innowise.orderservice.service.producer.OrderEventProducer;
 import com.innowise.orderservice.util.TestConstant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.KafkaException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
@@ -41,6 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -64,6 +68,9 @@ class OrderServiceTest {
     @MockitoBean
     private UserServiceCircuitBreaker circuitBreaker;
 
+    @MockitoBean
+    private OrderEventProducer orderEventProducer;
+
     @Autowired
     private OrderService orderService;
 
@@ -82,7 +89,7 @@ class OrderServiceTest {
         testOrder = Order.builder()
                 .id(TestConstant.LONG_ID)
                 .userId(TestConstant.LONG_ID)
-                .status(OrderStatus.NEW)
+                .status(OrderStatus.PROCESSING)
                 .creationDate(TestConstant.LOCAL_DATE_TIME_NOW)
                 .build();
         testItem = Item.builder()
@@ -197,7 +204,7 @@ class OrderServiceTest {
     @Test
     @WithMockUser(roles = TestConstant.ROLE_ADMIN_WITHOUT_PREFIX)
     void getOrdersByStatusesWhenOrderExistsTest() {
-        List<OrderStatus> requestStatuses = List.of(OrderStatus.NEW);
+        List<OrderStatus> requestStatuses = List.of(OrderStatus.PROCESSING);
 
         when(orderRepository.findOrdersByStatusIn(requestStatuses)).thenReturn(List.of(testOrder));
         when(circuitBreaker.getCustomersInfoOrFallbackMap(TestConstant.LONG_IDS))
@@ -234,6 +241,7 @@ class OrderServiceTest {
     void createOrderSuccessfulTest() {
         when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        doNothing().when(orderEventProducer).sendOrderEvent(any(Order.class));
         when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(testCustomer);
 
         OrderResponseDto resultDto = orderService.createOrder(TestConstant.LONG_ID, testRequestDto);
@@ -242,6 +250,7 @@ class OrderServiceTest {
 
         verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
         verify(orderRepository, times(1)).save(any(Order.class));
+        verify(orderEventProducer, times(1)).sendOrderEvent(any(Order.class));
         verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
     }
 
@@ -260,9 +269,26 @@ class OrderServiceTest {
 
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
+    void createOrderWhenKafkaIsUnavailableTest() {
+        when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
+        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        doThrow(new KafkaException("Kafka is unavailable")).when(orderEventProducer).sendOrderEvent(testOrder);
+
+        assertThatThrownBy(() -> orderService.createOrder(TestConstant.LONG_ID, testRequestDto))
+                .isInstanceOf(KafkaException.class)
+                .hasMessageContaining("Kafka is unavailable");
+
+        verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
+        verify(orderRepository, times(1)).save(any(Order.class));
+        verify(orderEventProducer, times(1)).sendOrderEvent(any(Order.class));
+    }
+
+    @Test
+    @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void updateOrderWithNewItemTest() {
         Order orderInDb = Order.builder()
                 .userId(TestConstant.LONG_ID)
+                .status(OrderStatus.PROCESSING)
                 .orderItems(new ArrayList<>())
                 .build();
         orderInDb.getOrderItems().add(OrderItem.builder().build());
@@ -271,6 +297,7 @@ class OrderServiceTest {
         when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(orderInDb));
         when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        doNothing().when(orderEventProducer).sendOrderEvent(any(Order.class));
         when(circuitBreaker.getCustomerInfoOrFallback(TestConstant.LONG_ID)).thenReturn(testCustomer);
 
         OrderResponseDto resultDto = orderService.updateOrder(TestConstant.LONG_ID, testRequestDto, TestConstant.LONG_ID);
@@ -281,6 +308,7 @@ class OrderServiceTest {
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
         verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
         verify(orderRepository, times(1)).save(any(Order.class));
+        verify(orderEventProducer, times(1)).sendOrderEvent(any(Order.class));
         verify(circuitBreaker, times(1)).getCustomerInfoOrFallback(TestConstant.LONG_ID);
     }
 
@@ -314,9 +342,31 @@ class OrderServiceTest {
 
     @Test
     @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
+    void updateOrderWhenOrderIsCompletedTest() {
+        Order orderInDb = Order.builder()
+                .userId(TestConstant.LONG_ID)
+                .status(OrderStatus.COMPLETED)
+                .orderItems(new ArrayList<>())
+                .build();
+
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(true);
+        when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(orderInDb));
+
+        assertThatThrownBy(() -> orderService.updateOrder(TestConstant.LONG_ID, testRequestDto, TestConstant.LONG_ID))
+                .isInstanceOf(OrderStatusException.class)
+                .hasMessageMatching("Order with id \\d+ is already completed")
+                .hasMessageContaining(String.valueOf(TestConstant.LONG_ID));
+
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
+        verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
+    }
+
+    @Test
+    @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
     void updateOrderWhenItemNotFoundTest() {
         Order orderInDb = Order.builder()
                 .userId(TestConstant.LONG_ID)
+                .status(OrderStatus.PROCESSING)
                 .orderItems(new ArrayList<>())
                 .build();
         orderInDb.getOrderItems().add(OrderItem.builder().build());
@@ -333,6 +383,33 @@ class OrderServiceTest {
         verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
         verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
         verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
+    }
+
+    @Test
+    @WithMockUser(roles = TestConstant.ROLE_USER_WITHOUT_PREFIX)
+    void updateOrderWhenKafkaIsUnavailableTest() {
+        Order orderInDb = Order.builder()
+                .userId(TestConstant.LONG_ID)
+                .status(OrderStatus.PROCESSING)
+                .orderItems(new ArrayList<>())
+                .build();
+        orderInDb.getOrderItems().add(OrderItem.builder().build());
+
+        when(orderRepository.existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID)).thenReturn(true);
+        when(orderRepository.findOrderById(TestConstant.LONG_ID)).thenReturn(Optional.of(orderInDb));
+        when(itemRepository.findItemById(TestConstant.INTEGER_ID)).thenReturn(Optional.of(testItem));
+        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        doThrow(new KafkaException("Kafka is unavailable")).when(orderEventProducer).sendOrderEvent(testOrder);
+
+        assertThatThrownBy(() -> orderService.updateOrder(TestConstant.LONG_ID, testRequestDto, TestConstant.LONG_ID))
+                .isInstanceOf(KafkaException.class)
+                .hasMessageContaining("Kafka is unavailable");
+
+        verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
+        verify(orderRepository, times(1)).findOrderById(TestConstant.LONG_ID);
+        verify(itemRepository, times(1)).findItemById(TestConstant.INTEGER_ID);
+        verify(orderRepository, times(1)).save(any(Order.class));
+        verify(orderEventProducer, times(1)).sendOrderEvent(any(Order.class));
     }
 
     @Test
@@ -394,7 +471,7 @@ class OrderServiceTest {
 
         assertThatThrownBy(() -> orderService.cancelOrderAsUser(TestConstant.LONG_ID, TestConstant.LONG_ID))
                 .isInstanceOf(OrderStatusException.class)
-                .hasMessageContaining("Cannot cancel completed order with id")
+                .hasMessageMatching("Order with id \\d+ is already completed")
                 .hasMessageContaining(String.valueOf(TestConstant.LONG_ID));
 
         verify(orderRepository, times(1)).existsOrderByIdAndUserId(TestConstant.LONG_ID, TestConstant.LONG_ID);
@@ -441,14 +518,14 @@ class OrderServiceTest {
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(orderRepository, itemRepository, circuitBreaker);
+        verifyNoMoreInteractions(orderRepository, itemRepository, orderEventProducer, circuitBreaker);
     }
 
     private void assertOrderResponseDtoFields(OrderResponseDto responseDto, CustomerDto expectedCustomer) {
         assertAll(
                 () -> assertThat(responseDto).isNotNull(),
                 () -> assertThat(responseDto.getCustomer()).isNotNull().isEqualTo(expectedCustomer),
-                () -> assertThat(responseDto.getStatus()).isNotNull().isEqualTo(OrderStatus.NEW)
+                () -> assertThat(responseDto.getStatus()).isNotNull().isEqualTo(OrderStatus.PROCESSING)
         );
 
         List<OrderItemResponseDto> receivedItems = responseDto.getItems();

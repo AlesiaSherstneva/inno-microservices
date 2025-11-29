@@ -92,7 +92,7 @@ public class Order {
     @PrePersist
     public void setDefaultStatus() {
         if (status == null) {
-            status = OrderStatus.NEW;
+            status = OrderStatus.PROCESSING;
         }
     }
 

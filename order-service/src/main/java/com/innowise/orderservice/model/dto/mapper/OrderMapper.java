@@ -3,6 +3,7 @@ package com.innowise.orderservice.model.dto.mapper;
 import com.innowise.orderservice.model.dto.CustomerDto;
 import com.innowise.orderservice.model.dto.OrderRequestDto;
 import com.innowise.orderservice.model.dto.OrderResponseDto;
+import com.innowise.orderservice.model.dto.kafka.OrderCreatedEvent;
 import com.innowise.orderservice.model.entity.Order;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -23,6 +24,10 @@ public interface OrderMapper {
     @Mapping(target = "items", source = "order.orderItems")
     @Mapping(target = "totalPrice", expression = "java(calculateTotalPrice(order))")
     OrderResponseDto toDto(Order order, CustomerDto customer);
+
+    @Mapping(target = "orderId", source = "id")
+    @Mapping(target = "paymentAmount", expression = "java(calculateTotalPrice(order))")
+    OrderCreatedEvent toEvent(Order order);
 
     default List<OrderResponseDto> toResponseDtoList(List<Order> orders, Map<Long, CustomerDto> customerMap) {
         if (orders.isEmpty()) {

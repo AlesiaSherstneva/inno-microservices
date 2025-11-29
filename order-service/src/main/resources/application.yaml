@@ -16,6 +16,14 @@ spring:
     url: jdbc:postgresql://localhost:5435/inno-orders-db
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVER_LOCAL}
+    consumer:
+      group-id: orders-service-group
+      properties:
+        spring.json.trusted.packages: "com.innowise.paymentservice.*"
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.innowise.orderservice.model.dto.kafka.PaymentProcessedEvent
   cloud:
     openfeign:
       client:
