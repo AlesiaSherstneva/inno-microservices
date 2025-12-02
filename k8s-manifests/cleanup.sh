@@ -8,6 +8,7 @@ kubectl delete -f k8s-manifests/services/config-server --ignore-not-found
 kubectl delete -f k8s-manifests/services/user-service --ignore-not-found
 kubectl delete -f k8s-manifests/services/auth-service --ignore-not-found
 kubectl delete -f k8s-manifests/services/order-service --ignore-not-found
+kubectl delete -f k8s-manifests/services/api-gateway --ignore-not-found
 
 echo "Deleting infrastructure..."
 kubectl delete statefulset -l app=user-service-postgres --ignore-not-found

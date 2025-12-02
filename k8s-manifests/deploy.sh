@@ -43,5 +43,10 @@ docker build -t order-service:latest ./order-service
 kubectl apply -f k8s-manifests/services/order-service/
 kubectl wait --for=condition=ready pod -l app=order-service --timeout=180s
 
+echo "Deploying ApiGateway..."
+docker build -t api-gateway:latest ./api-gateway
+kubectl apply -f k8s-manifests/services/api-gateway/
+kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s
+
 echo "=== INNO-MICROSERVICES DEPLOYMENT COMPLETED ==="
 kubectl get pods
