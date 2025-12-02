@@ -38,5 +38,10 @@ docker build -t auth-service:latest ./auth-service
 kubectl apply -f k8s-manifests/services/auth-service/
 kubectl wait --for=condition=ready pod -l app=auth-service --timeout=180s
 
+echo "Deploying OrderService..."
+docker build -t order-service:latest ./order-service
+kubectl apply -f k8s-manifests/services/order-service/
+kubectl wait --for=condition=ready pod -l app=order-service --timeout=180s
+
 echo "=== INNO-MICROSERVICES DEPLOYMENT COMPLETED ==="
 kubectl get pods
