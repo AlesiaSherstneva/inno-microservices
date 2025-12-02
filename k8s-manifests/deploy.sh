@@ -30,12 +30,12 @@ kubectl wait --for=condition=ready pod -l app=config-server --timeout=120s
 
 echo "Deploying UserService..."
 docker build -t user-service:latest ./user-service
-kubectl apply -f k8s-manifests/services/user-service.yaml
+kubectl apply -f k8s-manifests/services/user-service/
 kubectl wait --for=condition=ready pod -l app=user-service --timeout=180s
 
 echo "Deploying AuthService..."
 docker build -t auth-service:latest ./auth-service
-kubectl apply -f k8s-manifests/services/auth-service.yaml
+kubectl apply -f k8s-manifests/services/auth-service/
 kubectl wait --for=condition=ready pod -l app=auth-service --timeout=180s
 
 echo "=== INNO-MICROSERVICES DEPLOYMENT COMPLETED ==="
