@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo-1
+  labels:
+    app: mongo-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo-1
+  template:
+    metadata:
+      labels:
+        app: mongo-1
+    spec:
+      containers:
+        - name: mongo-1
+          image: mongo:latest
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: inno-payment-db
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: admin
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: admin
+          envFrom:
+            - secretRef:
+                name: app-config-secret
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+          command:
+            - sh
+            - -c
+            - |
+              if [ ! -f /data/db/mongo.key ]; then
+                echo ${MONGO_KEY} > /data/db/mongo.key &&
+                chmod 400 /data/db/mongo.key;
+              fi &&
+
+              chmod -R 755 /data/db/.mongodb/mongosh/ || true
+
+              docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/db/mongo.key --auth &
+
+              echo 'Waiting for mongo-1 to be ready...';
+              until mongosh --host localhost --port 27017 --eval 'db.adminCommand({ping: 1})' > /dev/null 2>&1; do sleep 1; done;
+              
+              echo 'Waiting for other nodes to be ready...';
+              until mongosh --host mongo-2 --port 27017 --eval 'db.adminCommand({ping: 1})' > /dev/null 2>&1; do sleep 1; done;
+              until mongosh --host mongo-3 --port 27017 --eval 'db.adminCommand({ping: 1})' > /dev/null 2>&1; do sleep 1; done;
+
+              echo 'Initiating replica set...';
+              mongosh --host localhost -u admin -p admin --authenticationDatabase admin --eval '
+                db.adminCommand({
+                  "replSetInitiate": {
+                    "_id": "rs0",
+                    "members": [
+                      { "_id": 0, "host": "mongo-1:27017", "priority": 2 },
+                      { "_id": 1, "host": "mongo-2:27017", "priority": 1 },
+                      { "_id": 2, "host": "mongo-3:27017", "priority": 1 }
+                    ]
+                  }
+                })
+              ';
+              
+              wait
+          livenessProbe:
+            exec:
+              command:
+                - mongosh
+                - -u
+                - admin
+                - -p
+                - admin
+                - --eval
+                - "db.adminCommand({ping: 1})"
+                - --quiet
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - mongosh
+                - -u
+                - admin
+                - -p
+                - admin
+                - --eval
+                - "db.adminCommand({ping: 1})"
+                - --quiet
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: wait-for-consumer
+        resources:
+          requests:
+            storage: 1Gi

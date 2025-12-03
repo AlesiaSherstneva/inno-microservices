@@ -10,11 +10,18 @@ echo "Applying configuration secrets..."
 kubectl apply -f k8s-manifests/secrets/app-config-secret.yaml
 
 echo "Deploying infrastructure..."
+kubectl apply -f k8s-manifests/storage/storage-provisioner-fix.yaml
+kubectl apply -f k8s-manifests/storage/wait-for-consumer-storage.yaml
+
 kubectl apply -f k8s-manifests/infrastructure/postgres/user-service/
 kubectl apply -f k8s-manifests/infrastructure/postgres/auth-service/
 kubectl apply -f k8s-manifests/infrastructure/postgres/order-service/
 kubectl apply -f k8s-manifests/infrastructure/redis/
 kubectl apply -f k8s-manifests/infrastructure/kafka/
+
+kubectl apply -f k8s-manifests/infrastructure/mongodb/replica-2/
+kubectl apply -f k8s-manifests/infrastructure/mongodb/replica-3/
+kubectl apply -f k8s-manifests/infrastructure/mongodb/replica-1/
 
 echo "Waiting for infrastructure to be ready..."
 kubectl wait --for=condition=ready pod/user-service-postgres-0 --timeout=180s
@@ -22,6 +29,7 @@ kubectl wait --for=condition=ready pod/auth-service-postgres-0 --timeout=180s
 kubectl wait --for=condition=ready pod/order-service-postgres-0 --timeout=180s
 kubectl wait --for=condition=ready pod/redis-0 --timeout=60s
 kubectl wait --for=condition=ready pod/kafka-0 --timeout=300s
+kubectl wait --for=condition=ready pod/mongo-1-0 --timeout=180s
 
 echo "Deploying ConfigServer..."
 docker build -t config-server:latest ./config-server
@@ -47,6 +55,11 @@ echo "Deploying ApiGateway..."
 docker build -t api-gateway:latest ./api-gateway
 kubectl apply -f k8s-manifests/services/api-gateway/
 kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s
+
+echo "Deploying PaymentService..."
+docker build -t payment-service:latest ./payment-service
+kubectl apply -f k8s-manifests/services/payment-service/
+kubectl wait --for=condition=ready pod -l app=payment-service --timeout=180s
 
 echo "=== INNO-MICROSERVICES DEPLOYMENT COMPLETED ==="
 kubectl get pods

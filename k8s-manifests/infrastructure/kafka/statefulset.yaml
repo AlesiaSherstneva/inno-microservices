@@ -85,6 +85,7 @@ spec:
       spec:
         accessModes:
           - ReadWriteOnce
+        storageClassName: wait-for-consumer
         resources:
           requests:
             storage: 2Gi

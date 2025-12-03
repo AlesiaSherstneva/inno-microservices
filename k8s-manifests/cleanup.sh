@@ -9,6 +9,7 @@ kubectl delete -f k8s-manifests/services/user-service --ignore-not-found
 kubectl delete -f k8s-manifests/services/auth-service --ignore-not-found
 kubectl delete -f k8s-manifests/services/order-service --ignore-not-found
 kubectl delete -f k8s-manifests/services/api-gateway --ignore-not-found
+kubectl delete -f k8s-manifests/services/payment-service --ignore-not-found
 
 echo "Deleting infrastructure..."
 kubectl delete statefulset -l app=user-service-postgres --ignore-not-found
@@ -25,6 +26,9 @@ kubectl delete pvc -l app=redis --ignore-not-found
 
 kubectl delete statefulset -l app=kafka --ignore-not-found
 kubectl delete pvc -l app=kafka --ignore-not-found
+
+kubectl delete statefulset -l "app in (mongo-1,mongo-2,mongo-3)" --ignore-not-found
+kubectl delete pvc -l "app in (mongo-1,mongo-2,mongo-3)" --ignore-not-found
 
 echo "Deleting secrets..."
 kubectl delete -f k8s-manifests/secrets/ --ignore-not-found
