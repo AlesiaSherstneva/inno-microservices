@@ -6,13 +6,14 @@ echo "=== INNO-MICROSERVICES DEPLOYMENT STARTED ==="
 echo "Initializing Minikube Docker environment..."
 eval "$(minikube docker-env --shell bash)"
 
+echo "Deploying configurations..."
+kubectl apply -f k8s-manifests/config/storage
+kubectl apply -f k8s-manifests/config/rbac
+
 echo "Applying configuration secrets..."
 kubectl apply -f k8s-manifests/secrets/app-config-secret.yaml
 
 echo "Deploying infrastructure..."
-kubectl apply -f k8s-manifests/storage/storage-provisioner-fix.yaml
-kubectl apply -f k8s-manifests/storage/wait-for-consumer-storage.yaml
-
 kubectl apply -f k8s-manifests/infrastructure/postgres/user-service/
 kubectl apply -f k8s-manifests/infrastructure/postgres/auth-service/
 kubectl apply -f k8s-manifests/infrastructure/postgres/order-service/
@@ -60,6 +61,9 @@ echo "Deploying PaymentService..."
 docker build -t payment-service:latest ./payment-service
 kubectl apply -f k8s-manifests/services/payment-service/
 kubectl wait --for=condition=ready pod -l app=payment-service --timeout=180s
+
+echo "Deploying Ingress..."
+kubectl apply -f k8s-manifests/network/
 
 echo "=== INNO-MICROSERVICES DEPLOYMENT COMPLETED ==="
 kubectl get pods
