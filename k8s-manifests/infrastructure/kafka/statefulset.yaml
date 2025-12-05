@@ -62,23 +62,18 @@ spec:
               mountPath: /var/lib/kafka/data
           command: ["sh", "-c", "unset KAFKA_PORT && exec /etc/confluent/docker/run"]
           livenessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - "kafka-topics --bootstrap-server $(POD_IP):9092 --list"
-            initialDelaySeconds: 120
-            periodSeconds: 30
-            timeoutSeconds: 20
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+
           readinessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - "kafka-topics --bootstrap-server $(POD_IP):9092 --list"
-            initialDelaySeconds: 90
-            periodSeconds: 30
-            timeoutSeconds: 20
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
   volumeClaimTemplates:
     - metadata:
         name: data

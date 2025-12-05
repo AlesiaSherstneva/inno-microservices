@@ -34,23 +34,26 @@ spec:
               command:
                 - sh
                 - -c
-                - "pg_isready -U postgres -d inno-auth-db"
+                - pg_isready -U postgres -d inno-auth-db
             initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
           readinessProbe:
             exec:
               command:
                 - sh
                 - -c
-                - "pg_isready -U postgres -d inno-auth-db"
+                - pg_isready -U postgres -d inno-auth-db
             initialDelaySeconds: 5
             periodSeconds: 5
+            timeoutSeconds: 3
   volumeClaimTemplates:
     - metadata:
         name: data
       spec:
         accessModes:
           - ReadWriteOnce
+        storageClassName: wait-for-consumer
         resources:
           requests:
             storage: 1Gi

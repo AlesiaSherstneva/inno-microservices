@@ -47,36 +47,22 @@ spec:
           livenessProbe:
             exec:
               command:
-                - mongosh
-                - --eval
-                - "db.adminCommand('ping')"
-                - admin
-                - -u
-                - admin
-                - -p
-                - admin
-                - --authenticationDatabase
-                - admin
-                - --quiet
+                - sh
+                - -c
+                - "mongosh --host localhost -u admin -p admin --authenticationDatabase admin --eval 
+                  'db.adminCommand({ping: 1})' --quiet"
             initialDelaySeconds: 60
-            periodSeconds: 30
+            periodSeconds: 15
             timeoutSeconds: 10
           readinessProbe:
             exec:
               command:
-                - mongosh
-                - --eval
-                - "db.adminCommand('ping')"
-                - admin
-                - -u
-                - admin
-                - -p
-                - admin
-                - --authenticationDatabase
-                - admin
-                - --quiet
+                - sh
+                - -c
+                - "mongosh --host localhost -u admin -p admin --authenticationDatabase admin --eval 
+                  'db.adminCommand({ping: 1})' --quiet"
             initialDelaySeconds: 60
-            periodSeconds: 15
+            periodSeconds: 30
             timeoutSeconds: 10
   volumeClaimTemplates:
     - metadata:
@@ -87,4 +73,4 @@ spec:
         storageClassName: wait-for-consumer
         resources:
           requests:
-            storage: 1Gi
+            storage: 2Gi

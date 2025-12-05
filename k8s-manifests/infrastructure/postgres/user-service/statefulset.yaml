@@ -37,6 +37,7 @@ spec:
                 - "pg_isready -U postgres -d inno-users-db"
             initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
           readinessProbe:
             exec:
               command:
@@ -51,6 +52,7 @@ spec:
       spec:
         accessModes:
           - ReadWriteOnce
+        storageClassName: wait-for-consumer
         resources:
           requests:
             storage: 1Gi

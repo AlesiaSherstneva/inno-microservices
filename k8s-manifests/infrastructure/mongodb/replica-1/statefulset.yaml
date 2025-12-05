@@ -46,11 +46,11 @@ spec:
               docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/db/mongo.key --auth &
 
               echo 'Waiting for mongo-1 to be ready...';
-              until mongosh --host localhost --port 27017 --eval 'db.adminCommand({ping: 1})' > /dev/null 2>&1; do sleep 1; done;
+              until mongosh --host localhost --port 27017 -u admin -p admin --authenticationDatabase admin --eval 'db.adminCommand({ping: 1})' > /dev/null 2>&1; do sleep 5; done;
               
               echo 'Waiting for other nodes to be ready...';
-              until mongosh --host mongo-2 --port 27017 --eval 'db.adminCommand({ping: 1})' > /dev/null 2>&1; do sleep 1; done;
-              until mongosh --host mongo-3 --port 27017 --eval 'db.adminCommand({ping: 1})' > /dev/null 2>&1; do sleep 1; done;
+              until mongosh --host mongo-2 --port 27017 -u admin -p admin --authenticationDatabase admin --eval 'db.adminCommand({ping: 1})' > /dev/null 2>&1; do sleep 5; done;
+              until mongosh --host mongo-3 --port 27017 -u admin -p admin --authenticationDatabase admin --eval 'db.adminCommand({ping: 1})' > /dev/null 2>&1; do sleep 5; done;
 
               echo 'Initiating replica set...';
               mongosh --host localhost -u admin -p admin --authenticationDatabase admin --eval '
@@ -70,28 +70,20 @@ spec:
           livenessProbe:
             exec:
               command:
-                - mongosh
-                - -u
-                - admin
-                - -p
-                - admin
-                - --eval
-                - "db.adminCommand({ping: 1})"
-                - --quiet
+                - sh
+                - -c
+                - "mongosh --host localhost -u admin -p admin --authenticationDatabase admin --eval 
+                  'db.adminCommand({ping: 1})' --quiet"
             initialDelaySeconds: 60
             periodSeconds: 15
             timeoutSeconds: 10
           readinessProbe:
             exec:
               command:
-                - mongosh
-                - -u
-                - admin
-                - -p
-                - admin
-                - --eval
-                - "db.adminCommand({ping: 1})"
-                - --quiet
+                - sh
+                - -c
+                - "mongosh --host localhost -u admin -p admin --authenticationDatabase admin --eval 
+                'db.adminCommand({ping: 1})' --quiet"
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 10
@@ -104,4 +96,4 @@ spec:
         storageClassName: wait-for-consumer
         resources:
           requests:
-            storage: 1Gi
+            storage: 2Gi
