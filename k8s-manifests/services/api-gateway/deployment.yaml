@@ -18,21 +18,29 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8080
-          env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: docker
           envFrom:
+            - configMapRef:
+                name: service-common-config
             - secretRef:
                 name: app-config-secret
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 384Mi
+              cpu: 500m
           livenessProbe:
             httpGet:
-              path: actuator/health/liveness
+              path: /actuator/health/liveness
               port: 8080
-            initialDelaySeconds: 90
-            periodSeconds: 10
+            initialDelaySeconds: 150
+            periodSeconds: 15
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: 8080
-            initialDelaySeconds: 40
-            periodSeconds: 5
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 3

@@ -24,6 +24,10 @@ spec:
               value: admin
             - name: MONGO_INITDB_ROOT_PASSWORD
               value: admin
+            - name: MONGOSH_RUNTIME_TIMEOUT
+              value: "10000"
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=128"
           envFrom:
             - secretRef:
                 name: app-config-secret
@@ -32,6 +36,13 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data/db
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 768Mi
+              cpu: 500m
           command:
             - sh
             - -c
@@ -43,7 +54,7 @@ spec:
 
               chmod -R 755 /data/db/.mongodb/mongosh/ || true
 
-              docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/db/mongo.key --auth &
+              docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/db/mongo.key --auth --wiredTigerCacheSizeGB 0.25 &
 
               echo 'Waiting for mongo-1 to be ready...';
               until mongosh --host localhost --port 27017 -u admin -p admin --authenticationDatabase admin --eval 'db.adminCommand({ping: 1})' > /dev/null 2>&1; do sleep 5; done;
@@ -74,9 +85,9 @@ spec:
                 - -c
                 - "mongosh --host localhost -u admin -p admin --authenticationDatabase admin --eval 
                   'db.adminCommand({ping: 1})' --quiet"
-            initialDelaySeconds: 60
-            periodSeconds: 15
-            timeoutSeconds: 10
+            initialDelaySeconds: 180
+            periodSeconds: 60
+            timeoutSeconds: 20
           readinessProbe:
             exec:
               command:
@@ -84,9 +95,9 @@ spec:
                 - -c
                 - "mongosh --host localhost -u admin -p admin --authenticationDatabase admin --eval 
                 'db.adminCommand({ping: 1})' --quiet"
-            initialDelaySeconds: 60
+            initialDelaySeconds: 120
             periodSeconds: 30
-            timeoutSeconds: 10
+            timeoutSeconds: 15
   volumeClaimTemplates:
     - metadata:
         name: data
