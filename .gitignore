@@ -9,3 +9,6 @@
 /volumes
 
 .env
+
+/k8s-manifests/secrets/*.yaml
+!/k8s-manifests/secrets/**.example

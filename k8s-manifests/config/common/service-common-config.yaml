@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-common-config
+data:
+  JAVA_OPTS: "-Xmx192m -Xms64m -XX:+UseZGC -XX:MaxMetaspaceSize=48m -XX:NativeMemoryTracking=summary -XX:MaxRAMPercentage=70.0"
+  SPRING_PROFILES_ACTIVE: "docker"
+  SPRING_CLOUD_CONFIG_FAIL_FAST: "false"
+  SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS: "30"
+  SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL: "5000"

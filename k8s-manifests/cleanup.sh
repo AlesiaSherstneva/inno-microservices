@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+echo "=== INNO-MICROSERVICES CLEANUP STARTED ==="
+
+echo "Deleting Ingress..."
+kubectl delete -f k8s-manifests/network/ingress.yaml --ignore-not-found
+
+echo "Deleting services..."
+kubectl delete -f k8s-manifests/services/config-server --ignore-not-found
+kubectl delete -f k8s-manifests/services/user-service --ignore-not-found
+kubectl delete -f k8s-manifests/services/auth-service --ignore-not-found
+kubectl delete -f k8s-manifests/services/order-service --ignore-not-found
+kubectl delete -f k8s-manifests/services/api-gateway --ignore-not-found
+kubectl delete -f k8s-manifests/services/payment-service --ignore-not-found
+
+echo "Deleting infrastructure..."
+kubectl delete statefulset -l app=user-service-postgres --ignore-not-found
+kubectl delete pvc -l app=user-service-postgres --ignore-not-found
+
+kubectl delete statefulset -l app=auth-service-postgres --ignore-not-found
+kubectl delete pvc -l app=auth-service-postgres --ignore-not-found
+
+kubectl delete statefulset -l app=order-service-postgres --ignore-not-found
+kubectl delete pvc -l app=order-service-postgres --ignore-not-found
+
+kubectl delete statefulset -l app=redis --ignore-not-found
+kubectl delete pvc -l app=redis --ignore-not-found
+
+kubectl delete statefulset -l app=kafka --ignore-not-found
+kubectl delete pvc -l app=kafka --ignore-not-found
+
+kubectl delete statefulset -l "app in (mongo-1,mongo-2,mongo-3)" --ignore-not-found
+kubectl delete pvc -l "app in (mongo-1,mongo-2,mongo-3)" --ignore-not-found
+
+echo "Deleting configurations..."
+kubectl delete -f k8s-manifests/config/common
+kubectl delete -f k8s-manifests/secrets/ --ignore-not-found
+kubectl delete -f k8s-manifests/config/rbac --ignore-not-found
+kubectl delete -f k8s-manifests/config/storage --ignore-not-found
+
+echo "=== INNO-MICROSERVICES CLEANUP COMPLETED ==="

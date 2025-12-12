@@ -30,6 +30,16 @@ spring:
           attempts: 5
           delay: 2000
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
 kafka:
   topic:
     properties:
