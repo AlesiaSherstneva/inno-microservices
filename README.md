@@ -60,3 +60,21 @@ JWT token management.
 - **Security:** Spring Security, JWT, BCryptPasswordEncoder
 - **Communication:** synchronous HTTP communication
 - **Registration flow:** `auth-service` → Feign Client → `user-service`
+
+### config-server
+
+**Location:** `/config-server/`  
+**Port:** 8888  
+**Description:** Centralized configuration management service using Spring Cloud Config.
+
+**Features:**
+- externalized configuration for all microservices
+- native-backed configuration storage
+
+## shared libraries
+
+### security-starter (additional task)
+
+**Location:** `/security-starter/`  
+**Description:** Shared Spring Boot Starter for centralized JTW authentication and authorization.
+Eliminates code duplication for token parsing and validation across all microservices.
