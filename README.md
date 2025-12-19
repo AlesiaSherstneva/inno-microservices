@@ -61,6 +61,31 @@ JWT token management.
 - **Communication:** synchronous HTTP communication
 - **Registration flow:** `auth-service` → Feign Client → `user-service`
 
+### order-service
+
+**Location:** `/order-service/`  
+**Port:** 8083  
+**Description:** Order processing service handling order lifecycle, inventory validation, and payment
+coordination.
+
+**Features:**
+- full order lifecycle management (create, update, cancel/delete)
+- integration with `user-service` for customer data
+- integration with `payment-service` for payment attempts result
+- order status tracking
+
+**Technical implementation:**
+- **Database:** PostgreSQL with Liquibase migrations
+- **Communication:** synchronous HTTP communication, asynchronous communication via message broker
+- **Message broker:** Apache Kafka
+- **Architecture Pattern:** Event-driven microservices with eventual consistency
+
+### payment-service
+
+**Location:** `/payment-service/`  
+**Port:** 8085  
+**Description:**
+
 ### config-server
 
 **Location:** `/config-server/`  
@@ -78,3 +103,8 @@ JWT token management.
 **Location:** `/security-starter/`  
 **Description:** Shared Spring Boot Starter for centralized JTW authentication and authorization.
 Eliminates code duplication for token parsing and validation across all microservices.
+
+**Features:**
+- automatic JWT parser configuration
+- ready-to-use filters for token generation and validation
+- methods for retrieving user ID and other claims from token
