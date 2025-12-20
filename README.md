@@ -1,7 +1,7 @@
 # inno-microservices
 
-A modular microservices-based application built with Java 21 and Spring Boot 3.5.7, following modern development 
-practices including containerization, CI/CD and comprehensive testing.
+A modular microservices-based application built with Java 21 and Spring Boot 3.5.7, following modern 
+development practices including containerization, CI/CD and comprehensive testing.
 
 ## technology stack
 
@@ -11,14 +11,16 @@ practices including containerization, CI/CD and comprehensive testing.
 - **Containerization:** Docker, Docker Compose
 - **CI/CD:** GitHub Actions, Kubernetes
 - **Testing:** JUnit 5, Mockito, Testcontainers, WireMock
+- **Databases:** PostgreSQL, MongoDB, Redis
+- **Message Broker:** Apache Kafka
 
 ## development strategy
 
 - all microservices share the same repository
 - `main` branch is protected and contains production-ready code
 - all development happens through pull requests (PR)
-- each microservice is a standalone Spring Boot application with its own `pom.xml`, developed in a separate directory 
-using its own branch
+- each microservice is a standalone Spring Boot application with its own `pom.xml`, developed in a separate 
+directory using its own branch
 - root-level `pom.xml` defines shared dependency versions and common plugins
 
 ## microservices
@@ -36,7 +38,8 @@ using its own branch
 **Features:**
 - user profile management (CRUD operations except user creation)
 - payment card management
-- user creation (`POST /api/users`) is designed to be called internally by auth-service only during registration
+- user creation (`POST /api/users`) is designed to be called internally by auth-service only during 
+registration
 
 **Technical implementation:**
 - **Database:** PostgreSQL with Liquibase migrations
@@ -71,7 +74,7 @@ coordination.
 **Features:**
 - full order lifecycle management (create, update, cancel/delete)
 - integration with `user-service` for customer data
-- integration with `payment-service` for payment attempts result
+- integration with `payment-service` for payment attempts
 - order status tracking
 
 **Technical implementation:**
@@ -84,7 +87,12 @@ coordination.
 
 **Location:** `/payment-service/`  
 **Port:** 8085  
-**Description:**
+**Description:** Payment processing microservice with asynchronous event-driven architecture.
+
+**Features:**
+- payment processing and transaction management
+- integration with `order-service` for payment results
+- integration with [external random number API](https://www.randomnumberapi.com/)
 
 ### config-server
 
