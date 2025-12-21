@@ -75,29 +75,53 @@ coordination.
 - full order lifecycle management (create, update, cancel/delete)
 - integration with `user-service` for customer data
 - integration with `payment-service` for payment attempts
-- order status tracking (PROCESSING, PAYMENT_FAILED, COMPLETED, CANCELLED)
+- order status tracking
 
 **Technical implementation:**
 - **Database:** PostgreSQL with Liquibase migrations
 - **Communication:** synchronous HTTP communication, asynchronous communication via message broker
+- **Architecture pattern:** event-driven microservices with eventual consistency, circuit breaker for 
+the fault tolerance
 - **Message broker:** Apache Kafka
-- **Architecture Pattern:** Event-driven microservices with eventual consistency
+- **Circuit breaker:** Resilience4j
+
+### api-gateway
+
+**Location:** `/api-gateway/`  
+**Port:** 8080  
+**Description:** Centralized API gateway serving as single entrypoint for all client requests.
+
+**Features:**
+- request routing to appropriate microservices
+- JWT-based security filtering and validation using `security-starter`
+
+**Technical implementation:**
+- **API Gateway implementation:** Spring Cloud Gateway with WebFlux (non-blocking)
+- **Security:** Spring Security, JWT
+- **Routing:** Static route configuration to fixed service ports
+
+**Key routes:**
+- `api/vi/users/**` -> routes to `user-service:8081`
+- `api/vi/auth/**` -> routes to `auth-service:8082`
+- `api/vi/orders/**` -> routes to `order-service:8083`
 
 ### payment-service
 
 **Location:** `/payment-service/`  
 **Port:** 8085  
-**Description:** Payment processing microservice with asynchronous event-driven architecture.
+**Description:** Payment processing service with asynchronous event-driven architecture.
 
 **Features:**
 - payment processing and transaction management
-- integration with [external random number API](https://www.randomnumberapi.com/) to simulate payment 
-attempts
+- integration with external API to simulate payment attempts
 - integration with `order-service` for payment results
-- payment status tracking (SUCCESS, FAILED)
+- payment status tracking
 
 **Technical implementation:**
 - **Database:** MongoDB (set of three replicas) with Liquibase migrations
+- **Communication:** synchronous HTTP communication, asynchronous communication via message broker
+- **Message broker:** Apache Kafka
+- **External API integration:** [external random number API](https://www.randomnumberapi.com/)
 
 ### config-server
 
@@ -121,3 +145,5 @@ Eliminates code duplication for token parsing and validation across all microser
 - automatic JWT parser configuration
 - ready-to-use filters for token generation and validation
 - methods for retrieving user ID and other claims from token
+
+## deployment
